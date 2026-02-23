@@ -9,6 +9,9 @@ const MarketSectionWrapper = styled.div`
   flex-direction: column;
   gap: 24px;
   margin-bottom: 32px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 
   @media (max-width: 1024px) {
     gap: 20px;

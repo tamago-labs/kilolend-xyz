@@ -6,6 +6,7 @@ import { HeroSection } from './components/HeroSection';
 import { MarketSection } from './components/MarketSection';
 import { ComparisonTableSection } from './components/ComparisonTableSection';
 import { OpenClawSkillsCTASection } from './components/OpenClawSkillsCTASection';
+import { DemoVideoSection } from './components/DemoVideoSection';
 import { FAQSection } from './components/FAQSection'; 
 import { useRouter } from 'next/navigation';
 import { LineMiniDAppModal, DesktopAIAgentModal } from '../../modals';
@@ -16,8 +17,7 @@ const HomeContainer = styled.div`
   background: #f8fafc;
 `;
 
-const MainContent = styled.main`
-  max-width: 1400px;
+const MainContent = styled.main` 
   margin: 0 auto;
   padding: 32px;
 `;
@@ -66,6 +66,8 @@ export const DesktopHome = () => {
         <ComparisonTableSection/>
 
         <OpenClawSkillsCTASection/>
+
+        <DemoVideoSection/>
 
         <FAQSection/>
 
