@@ -1,4 +1,3 @@
-
 const express = require('express');
 const dotenv = require('dotenv'); 
 const cors = require('cors');
@@ -22,6 +21,7 @@ const { getAllChainIds, getChainConfig } = require('./config/chains');
  * - Coordinate module lifecycle
  * - Provide health check API
  * - Handle graceful shutdown
+ * - CENTRALIZED DAILY SUMMARY (FIXED)
  */
 class UnifiedBot {
   constructor() {
@@ -30,6 +30,7 @@ class UnifiedBot {
     this.isInitialized = false;
     this.isRunning = false;
     this.startTime = null;
+    this.dailySummaryInterval = null; // Centralized daily summary timer
     
     // Parse enabled chains from environment
     this.enabledChains = this.parseEnabledChains();
@@ -168,6 +169,183 @@ class UnifiedBot {
   }
 
   /**
+   * Start centralized daily summary timer (FIXED)
+   */
+  startDailySummaryTimer() {
+    // Run daily summary every 60 minutes (configurable via env)
+    const intervalMinutes = parseInt(process.env.DAILY_SUMMARY_INTERVAL_MINUTES) || 60;
+    const intervalMs = intervalMinutes * 60 * 1000;
+    
+    console.log(`📊 Starting centralized daily summary timer (every ${intervalMinutes} minutes)`);
+    
+    this.dailySummaryInterval = setInterval(async () => {
+      await this.runUnifiedDailySummary();
+    }, intervalMs);
+    
+    // Run immediately on start
+    setTimeout(() => {
+      this.runUnifiedDailySummary();
+    }, 1000); // Small delay to ensure everything is started
+  }
+
+  /**
+   * Run unified daily summary across all chains (FIXED)
+   */
+  async runUnifiedDailySummary() {
+    try {
+      console.log('\n📊 UNIFIED DAILY SUMMARY');
+      console.log('==========================');
+      
+      const pointTrackers = this.modules.filter(m => m.name === 'PointTracker');
+      if (pointTrackers.length === 0) {
+        console.log('💭 No PointTracker modules found');
+        return;
+      }
+      
+      // Aggregate data from all chains
+      const allChainData = {};
+      let totalUsers = new Set();
+      let totalEvents = 0;
+      let totalTVLContributed = 0;
+      let totalNetContribution = 0;
+      let allTVLChanges = {};
+      let allBorrowChanges = {};
+      
+      console.log(`📡 Processing ${pointTrackers.length} chains: ${pointTrackers.map(pt => pt.chainId).join(', ')}`);
+      
+      // Collect data from all chains
+      for (const pointTracker of pointTrackers) {
+        const chainId = pointTracker.chainId;
+        const statsManager = pointTracker.statsManagers[chainId];
+        
+        if (!statsManager) {
+          console.warn(`⚠️  No stats manager found for ${chainId}`);
+          continue;
+        }
+        
+        const currentDate = statsManager.getCurrentDate();
+        const userStats = statsManager.getUserStats();
+        const users = statsManager.getUsers();
+        const events = statsManager.getTotalEvents();
+        
+        console.log(`📊 ${chainId.toUpperCase()}: ${users.length} users, ${events} events`);
+        
+        // Aggregate data
+        allChainData[chainId] = {
+          currentDate,
+          userStats,
+          users,
+          events,
+          kiloDistribution: pointTracker.dailyKiloDistribution,
+          totalTVLContributed: statsManager.dailyStats.totalTVLContributed,
+          totalNetContribution: statsManager.dailyStats.totalNetContribution,
+          tvlChanges: statsManager.dailyStats.tvlChanges,
+          borrowChanges: statsManager.dailyStats.borrowChanges
+        };
+        
+        // Track unique users across all chains
+        users.forEach(user => totalUsers.add(user));
+        totalEvents += events;
+        totalTVLContributed += statsManager.dailyStats.totalTVLContributed;
+        totalNetContribution += statsManager.dailyStats.totalNetContribution;
+        
+        // Merge market changes
+        Object.entries(statsManager.dailyStats.tvlChanges).forEach(([market, change]) => {
+          allTVLChanges[market] = (allTVLChanges[market] || 0) + change;
+        });
+        
+        Object.entries(statsManager.dailyStats.borrowChanges).forEach(([market, change]) => {
+          allBorrowChanges[market] = (allBorrowChanges[market] || 0) + change;
+        });
+      }
+      
+      console.log(`🏆 Cross-chain summary: ${totalUsers.size} unique users, ${totalEvents} total events`);
+      console.log(`💰 Total TVL Contributed: $${totalTVLContributed.toFixed(2)}`);
+      console.log(`📈 Total Net Contribution: $${totalNetContribution.toFixed(2)}`);
+      
+      // Calculate cross-chain user stats for point distribution
+      const crossChainUserStats = {};
+      for (const [chainId, chainData] of Object.entries(allChainData)) {
+        for (const [userAddress, userStats] of Object.entries(chainData.userStats)) {
+          if (!crossChainUserStats[userAddress]) {
+            crossChainUserStats[userAddress] = {
+              baseTVL: 0,
+              netContribution: 0,
+              basePoints: 0,
+              multiplier: 1.0,
+              finalKilo: 0,
+              activities: { supplies: 0, withdraws: 0, borrows: 0, repays: 0 },
+              lastBalanceUpdate: null
+            };
+          }
+          
+          // Aggregate user data across chains
+          const aggregated = crossChainUserStats[userAddress];
+          aggregated.baseTVL = Math.max(aggregated.baseTVL, userStats.baseTVL); // Use max TVL
+          aggregated.netContribution += userStats.netContribution;
+          aggregated.activities.supplies += userStats.activities.supplies;
+          aggregated.activities.withdraws += userStats.activities.withdraws;
+          aggregated.activities.borrows += userStats.activities.borrows;
+          aggregated.activities.repays += userStats.activities.repays;
+          aggregated.lastBalanceUpdate = userStats.lastBalanceUpdate || aggregated.lastBalanceUpdate;
+        }
+      }
+      
+      // Calculate and distribute KILO points (cross-chain)
+      let totalKiloDistributed = 0;
+      if (Object.keys(crossChainUserStats).length > 0) {
+        // Use total KILO distribution from all chains combined
+        const totalKiloDistribution = pointTrackers.reduce((sum, pt) => sum + pt.dailyKiloDistribution, 0);
+        const kiloCalculator = pointTrackers[0].kiloCalculator; // Use first calculator
+        
+        if (kiloCalculator) {
+          const distributions = await kiloCalculator.calculateKiloPoints(crossChainUserStats);
+          totalKiloDistributed = distributions.reduce((sum, d) => sum + d.kiloAmount, 0);
+          
+          console.log(`💎 Cross-chain KILO distribution: ${distributions.length} users, ${totalKiloDistributed.toLocaleString()} KILO`);
+          
+          // Store to database (single unified entry)
+          if (pointTrackers[0].databaseService && distributions.length > 0) {
+            console.log('\n💾 STORING UNIFIED DATA TO DATABASE...');
+            console.log('===================================');
+            
+            const summary = {
+              uniqueUsers: totalUsers.size,
+              totalEvents: totalEvents,
+              totalTVLContributed: totalTVLContributed,
+              totalNetContribution: totalNetContribution,
+              netTVLChange: Object.values(allTVLChanges).reduce((sum, change) => sum + change, 0),
+              netBorrowChange: Object.values(allBorrowChanges).reduce((sum, change) => sum + change, 0),
+              tvlChangesByMarket: allTVLChanges,
+              borrowChangesByMarket: allBorrowChanges,
+              chainsProcessed: Object.keys(allChainData),
+              crossChain: true
+            };
+            
+            await pointTrackers[0].databaseService.storeDailySummary(
+              new Date().toISOString().split('T')[0],
+              distributions,
+              summary
+            );
+          } else if (!distributions || distributions.length === 0) {
+            console.log('\n💾 No cross-chain distributions to store to database');
+          }
+        } else {
+          console.log('\n💎 No KILO calculator available for cross-chain distribution');
+        }
+      } else {
+        console.log('\n💎 No cross-chain user activity for KILO distribution today');
+      }
+      
+      console.log('==========================\n');
+      
+    } catch (error) {
+      console.error('❌ Error in unified daily summary:', error.message);
+      console.error('💡 Continuing with next cycle...');
+    }
+  }
+
+  /**
    * Start the bot
    */
   async start() {
@@ -180,10 +358,19 @@ class UnifiedBot {
       this.startTime = new Date();
       this.isRunning = true;
       
-      // Start all modules
+      // Start all modules (except PointTracker daily summaries which are centralized)
       for (const module of this.modules) {
+        if (module.name === 'PointTracker') {
+          // Disable individual daily summary timers for PointTrackers
+          if (module.disableDailySummaryTimer) {
+            module.disableDailySummaryTimer();
+          }
+        }
         await module.start();
       }
+      
+      // Start centralized daily summary timer (FIXED)
+      this.startDailySummaryTimer();
       
       console.log('\n✅ Unified Bot is running');
       console.log('===================================');
@@ -206,6 +393,12 @@ class UnifiedBot {
     console.log('\n🛑 Stopping Unified Bot...');
     
     try {
+      // Stop centralized daily summary timer
+      if (this.dailySummaryInterval) {
+        clearInterval(this.dailySummaryInterval);
+        this.dailySummaryInterval = null;
+      }
+      
       // Stop all modules
       for (const module of this.modules) {
         await module.stop();
@@ -247,6 +440,7 @@ class UnifiedBot {
         unhealthy: this.modules.length - healthyModules,
         details: moduleHealth
       },
+      centralizedDailySummary: this.dailySummaryInterval !== null,
       timestamp: new Date().toISOString()
     };
   }
@@ -261,6 +455,7 @@ class UnifiedBot {
     console.log(`Uptime: ${this.formatUptime(this.getHealthStatus().uptime)}`);
     console.log(`Chains: ${this.enabledChains.join(', ')}`);
     console.log(`Modules: ${this.modules.length} total`);
+    console.log(`Daily Summary: ${this.dailySummaryInterval ? 'CENTRALIZED ✅' : 'DISABLED ❌'}`);
     
     // Module summary
     const moduleTypes = {};
@@ -333,6 +528,7 @@ async function main() {
     res.json({
       name: 'KiloLend Unified Bot',
       version: '1.0.0',
+      features: ['centralized_daily_summary', 'cross_chain_aggregation', 'no_point_duplication'],
       endpoints: {
         health: '/health',
         status: '/status',
@@ -341,81 +537,23 @@ async function main() {
     });
   });
   
-  // Manual trigger endpoint for daily point calculation
+  // Manual trigger endpoint for unified daily point calculation (FIXED)
   app.post('/trigger-daily-update', async (req, res) => {
     try {
-      console.log('\n🚀 MANUAL TRIGGER: Daily Point Update Requested');
+      console.log('\n🚀 MANUAL TRIGGER: Unified Daily Point Update Requested');
       console.log('='.repeat(60));
       
-      const chainId = req.body.chainId || null;
-      const targetChains = chainId ? [chainId] : bot.enabledChains;
+      // Use the unified daily summary instead of per-chain processing
+      await bot.runUnifiedDailySummary();
       
-      console.log(`📡 Target chains: ${targetChains.join(', ')}`);
-      
-      const results = {};
-      let totalDistributions = 0;
-      
-      // Trigger update for each chain's PointTracker
-      for (const cId of targetChains) {
-        const pointTracker = bot.modules.find(m => 
-          m.name === 'PointTracker' && m.chainId === cId
-        );
-        
-        if (pointTracker) {
-          try {
-            console.log(`\n📊 Processing ${cId}...`);
-            
-            // Force daily summary calculation
-            await pointTracker.printDailySummary();
-            
-            const stats = pointTracker.statsManagers[cId];
-            const today = new Date().toISOString().split('T')[0];
-            const users = stats.getUsers();
-            const events = stats.getTotalEvents();
-            const kiloDist = pointTracker.dailyKiloDistribution;
-            
-            results[cId] = {
-              success: true,
-              users: users.length,
-              events: events,
-              kiloDistribution: kiloDist,
-              date: today
-            };
-            
-            totalDistributions += users.length;
-            console.log(`✅ ${cId}: ${users.length} users, ${events} events, ${kiloDist.toLocaleString()} KILO`);
-            
-          } catch (error) {
-            console.error(`❌ Error processing ${cId}:`, error.message);
-            results[cId] = {
-              success: false,
-              error: error.message
-            };
-          }
-        } else {
-          console.warn(`⚠️  No PointTracker found for ${cId}`);
-          results[cId] = {
-            success: false,
-            error: 'PointTracker module not found'
-          };
-        }
-      }
-      
-      console.log('\n' + '='.repeat(60));
-      console.log('✅ Manual daily update completed successfully');
-      
-      const successCount = Object.values(results).filter(r => r.success).length;
+      console.log('='.repeat(60));
+      console.log('✅ Manual unified daily update completed successfully');
       
       res.json({
         success: true,
-        message: `Manual trigger completed: ${successCount}/${targetChains.length} chains`,
+        message: 'Manual unified daily update completed successfully',
         timestamp: new Date().toISOString(),
-        chains: results,
-        summary: {
-          totalChains: targetChains.length,
-          successfulChains: successCount,
-          totalUsers: Object.values(results).filter(r => r.success).reduce((sum, r) => sum + r.users, 0)
-        }
+        features: ['cross_chain_aggregation', 'no_point_duplication', 'single_database_entry']
       });
       
     } catch (error) {
@@ -468,7 +606,7 @@ async function main() {
   }
 }
 
-// Start the bot
+// Start bot
 if (require.main === module) {
   main();
 }

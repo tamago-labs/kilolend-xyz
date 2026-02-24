@@ -36,14 +36,14 @@ class BalanceManager {
     if (typeof value === 'bigint') {
       const num = Number(value);
       if (!Number.isSafeInteger(num)) {
-        console.warn(`⚠️  BigInt ${value.toString()} exceeds Number.MAX_SAFE_INTEGER, precision may be lost`);
+        // console.warn(`⚠️  BigInt ${value.toString()} exceeds Number.MAX_SAFE_INTEGER, precision may be lost`);
       }
       return num;
     }
     if (typeof value === 'string') {
       const num = Number(value);
       if (!Number.isSafeInteger(num)) {
-        console.warn(`⚠️  String "${value}" exceeds Number.MAX_SAFE_INTEGER, precision may be lost`);
+        // console.warn(`⚠️  String "${value}" exceeds Number.MAX_SAFE_INTEGER, precision may be lost`);
       }
       return num;
     }

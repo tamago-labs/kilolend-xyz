@@ -62,7 +62,10 @@ class KiloPointCalculator {
 
   async calculateKiloPoints(userStats) {
     const users = Object.keys(userStats);
-    if (users.length === 0) return [];
+    if (users.length === 0) {
+      console.log('🔧 No users found, returning empty array');
+      return [];
+    }
 
     console.log('\n🧮 CALCULATING KILO POINTS...');
     console.log('==============================');

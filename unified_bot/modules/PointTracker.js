@@ -4,6 +4,7 @@ const BaseModule = require('./BaseModule');
 const DatabaseService = require('../services/DatabaseService');
 const BalanceManager = require('../services/BalanceManager');
 const KiloPointCalculator = require('../services/KiloPointCalculator');
+const PriceManager = require('../services/PriceManager');
 const { getChainContracts, getChainMarkets, getKiloDistribution } = require('../config/chains');
 
 // CToken ABI - events we need to listen to
@@ -24,7 +25,7 @@ const CTOKEN_ABI = [
  * - Monitor Mint/Redeem/Borrow/Repay events
  * - Calculate KILO points based on TVL
  * - Support per-chain KILO distribution
- * - Daily point distribution
+ * - Daily point distribution (CENTRALIZED MODE)
  */
 class PointTracker extends BaseModule {
   constructor(chainManager, options = {}) {
@@ -110,7 +111,7 @@ class PointTracker extends BaseModule {
     const chainId = this.chainId;
     const self = this; // Store reference to PointTracker instance
     
-    // Full StatsManager implementation
+    // Full StatsManager implementation - FIXED VERSION
     this.statsManagers[this.chainId] = {
       dailyStats: {
         users: new Set(),
@@ -131,10 +132,9 @@ class PointTracker extends BaseModule {
         // Store base TVL data before resetting to preserve it across day changes
         const baseTVLStorage = {};
         for (const [user, stats] of Object.entries(this.dailyStats.userStats)) {
-          if (stats.baseTVL > 0 || stats.balanceBreakdown) {
+          if (stats.baseTVL > 0) { // FIXED: Removed balanceBreakdown condition
             baseTVLStorage[user] = {
-              baseTVL: stats.baseTVL,
-              balanceBreakdown: stats.balanceBreakdown
+              baseTVL: stats.baseTVL
             };
           }
         }
@@ -152,7 +152,7 @@ class PointTracker extends BaseModule {
         
         // Restore base TVL data for users who had it
         for (const [user, data] of Object.entries(baseTVLStorage)) {
-          this.initializeUserBaseTVL(user, data.baseTVL, data.balanceBreakdown);
+          this.initializeUserBaseTVL(user, data.baseTVL, {});
         }
         
         return baseTVLStorage;
@@ -172,7 +172,8 @@ class PointTracker extends BaseModule {
               borrows: 0,
               repays: 0
             },
-            balanceBreakdown: {},
+            // FIXED: balanceBreakdown commented out like working version
+            // balanceBreakdown: {},
             lastBalanceUpdate: null
           };
         }
@@ -217,7 +218,8 @@ class PointTracker extends BaseModule {
         
         const userStats = this.dailyStats.userStats[userAddress];
         userStats.baseTVL = totalBaseTVL;
-        userStats.balanceBreakdown = marketBreakdown;
+        // FIXED: Commented out balanceBreakdown like working version
+        // userStats.balanceBreakdown = marketBreakdown;
         userStats.lastBalanceUpdate = new Date().toISOString();
         
         this.dailyStats.users.add(userAddress);
@@ -228,7 +230,8 @@ class PointTracker extends BaseModule {
         
         const userStats = this.dailyStats.userStats[userAddress];
         userStats.baseTVL = baseTVLData.totalBaseTVL;
-        userStats.balanceBreakdown = baseTVLData.marketBreakdown;
+        // FIXED: Commented out balanceBreakdown like working version
+        // userStats.balanceBreakdown = baseTVLData.marketBreakdown;
         userStats.lastBalanceUpdate = new Date().toISOString();
       },
       
@@ -440,43 +443,8 @@ class PointTracker extends BaseModule {
       }
     };
     
-    // Price manager (simplified - uses API)
-    this.priceManagers[this.chainId] = {
-      prices: {},
-      lastUpdate: null,
-      
-      // Symbol mappings from API to internal format
-      // API returns uppercase with underscores, we use lowercase from chains.js
-      symbolMap: {
-        'MARBLEX': 'mbx',
-        'STAKED_KAIA': 'stkaia'
-      },
-      
-      async fetchPrices() {
-        try {
-          const response = await axios.get(`${apiBaseUrl}/prices`, {
-            timeout: 10000
-          });
-          
-          if (response.data && response.data.success) {
-            const prices = {};
-            response.data.data.forEach(item => {
-              // Map API symbol to internal format
-              const mappedSymbol = this.symbolMap[item.symbol] || item.symbol.toLowerCase();
-              prices[mappedSymbol] = parseFloat(item.price);
-            });
-            this.prices = prices;
-            this.lastUpdate = new Date();
-          }
-        } catch (error) {
-          console.log(`[${chainId}] Failed to fetch prices: ${error.message}`);
-        }
-      },
-      
-      getPrice(symbol) {
-        return this.prices[symbol] || 0;
-      }
-    };
+    // Use the new PriceManager service
+    this.priceManagers[this.chainId] = new PriceManager(`${apiBaseUrl}/prices`);
     
     // Balance manager (simplified)
     this.balanceManagers[this.chainId] = {
@@ -581,8 +549,9 @@ class PointTracker extends BaseModule {
   async run() {
     this.log('Starting point tracking...', 'info');
     
-    // Fetch initial prices
-    await this.priceManagers[this.chainId].fetchPrices();
+    // Initialize and fetch initial prices
+    const priceManager = this.priceManagers[this.chainId];
+    await priceManager.fetchPrices();
     
     // Initialize existing users with their base TVL
     await this.initializeExistingUsers();
@@ -594,10 +563,16 @@ class PointTracker extends BaseModule {
       this.processRecentEvents();
     }, this.pollInterval);
     
-    // Print daily summary every hour
-    this.summaryInterval = setInterval(() => {
-      this.printDailySummary();
-    }, 60 * 60 * 1000);
+    // NOTE: Daily summary timer is now handled by centralized bot
+    // Only start individual timer if not in centralized mode
+    if (!process.env.CENTRALIZED_DAILY_SUMMARY || process.env.CENTRALIZED_DAILY_SUMMARY === 'false') {
+      this.summaryInterval = setInterval(() => {
+        this.printDailySummary();
+      }, 60 * 60 * 1000);
+      this.log(`Starting individual daily summary timer (non-centralized mode)`, 'info');
+    } else {
+      this.log(`Daily summary timer disabled (centralized mode)`, 'info');
+    }
     
     this.log(`Polling every ${this.pollInterval / 1000}s, scanning ${this.scanWindowSeconds}s window`, 'info');
   }
@@ -730,8 +705,18 @@ class PointTracker extends BaseModule {
       }
       
       const tokenAmount = parseFloat(this.formatTokenAmount(amount, market.decimals));
-      const tokenPrice = priceManager.getPrice(market.underlyingSymbol);
+      const tokenPrice = await priceManager.getTokenPrice(market.underlyingSymbol);
       usdValue = tokenAmount * tokenPrice;
+      
+      // Detailed logging for debugging
+      console.log(`🔍 ${event.type.toUpperCase()} EVENT DETAILS:`);
+      console.log(`   👤 User: ${user}`);
+      console.log(`   📍 Market: ${market.symbol} (${market.underlyingSymbol})`);
+      console.log(`   💰 Token Amount: ${tokenAmount.toFixed(6)} ${market.underlyingSymbol}`);
+      console.log(`   💵 Token Price: $${tokenPrice.toFixed(6)}`);
+      console.log(`   💲 USD Value: $${usdValue.toFixed(2)}`);
+      console.log(`   📦 Block: ${event.blockNumber}`);
+      console.log(`   🆔 Tx: ${event.transactionHash}`);
       
       statsManager.updateDailyStats(user, market.underlyingSymbol, usdValue, event.type);
       
@@ -751,6 +736,17 @@ class PointTracker extends BaseModule {
     statsManager.printDailySummary(kiloCalculator, balanceManager, databaseService, this.chainId);
   }
 
+  /**
+   * Disable daily summary timer (used by centralized bot) - FIXED
+   */
+  disableDailySummaryTimer() {
+    if (this.summaryInterval) {
+      clearInterval(this.summaryInterval);
+      this.summaryInterval = null;
+      this.log('Daily summary timer disabled (centralized mode)', 'info');
+    }
+  }
+
   async cleanup() {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
@@ -759,6 +755,10 @@ class PointTracker extends BaseModule {
       clearInterval(this.summaryInterval);
     }
     this.log('PointTracker cleanup complete', 'success');
+  }
+
+  formatTokenAmount(amount, decimals) {
+    return ethers.formatUnits(amount, decimals);
   }
 
   getHealthStatus() {
