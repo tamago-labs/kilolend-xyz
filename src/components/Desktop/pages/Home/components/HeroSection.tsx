@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChain } from '@/contexts/ChainContext';
 import { etherlink } from '@/wagmi_config';
+import { Plus } from 'react-feather';
 
 // Hero Section Styles
 const HeroSectionWrapper = styled.section` 
@@ -92,12 +93,19 @@ const SecondaryButton = styled.button`
   }
 `;
 
-// Blockchain Support Section
-const BlockchainSupport = styled.div`
+// Support Section - Combined Networks and Protocols
+const SupportSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+`;
+
+const SupportGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 24px;  
 `;
 
 const SupportLabel = styled.span`
@@ -106,7 +114,7 @@ const SupportLabel = styled.span`
   font-weight: 500;
 `;
 
-const BlockchainIcon = styled.div`
+const SupportIcon = styled.div`
   position: relative;
   display: inline-block;
   cursor: pointer;
@@ -119,7 +127,7 @@ const IconImage = styled.img`
   border-radius: 50%;
   transition: transform 0.2s ease;
 
-  ${BlockchainIcon}:hover & {
+  ${SupportIcon}:hover & {
     transform: scale(1.1);
   }
 `;
@@ -151,6 +159,30 @@ const Tooltip = styled.div<{ $visible?: boolean }>`
     border: 4px solid transparent;
     border-top-color: #1e293b;
   }
+`;
+
+const RequestButton = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #e2e8f0;
+    transform: scale(1.1);
+  }
+`;
+
+const PlusIcon = styled(Plus)`
+  width: 14px;
+  height: 14px;
+  color: #64748b;
 `;
 
 // Phone components must be defined before MobileMockup to avoid hoisting issues
@@ -337,6 +369,12 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
   const { selectedChain } = useChain();
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
 
+  const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdSdDIX5OCCHnc2LbKF4j7rfzQEJmsIEhusTK5r6P_XCgYRLw/viewform?usp=dialog';
+
+  const openGoogleForm = () => {
+    window.open(GOOGLE_FORM_URL, '_blank');
+  };
+
 
   return (
     <HeroSectionWrapper>
@@ -356,46 +394,84 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
             </SecondaryButton>
           </CTAContainer>
 
-          {/* Blockchain Support Section */}
-          <BlockchainSupport>
-            <SupportLabel>Blockchains supported:</SupportLabel>
-            <BlockchainIcon
-              onMouseEnter={() => setTooltipVisible('kaia')}
-              onMouseLeave={() => setTooltipVisible(null)}
-            >
-              <IconImage
-                src="/images/blockchain-icons/kaia-token-icon.png"
-                alt="KAIA"
-              />
-              <Tooltip $visible={tooltipVisible === 'kaia'}>
-                KAIA
-              </Tooltip>
-            </BlockchainIcon>
-            <BlockchainIcon
-              onMouseEnter={() => setTooltipVisible('kub')}
-              onMouseLeave={() => setTooltipVisible(null)}
-            >
-              <IconImage
-                src="/images/blockchain-icons/kub-chain-icon.png"
-                alt="KUB"
-              />
-              <Tooltip $visible={tooltipVisible === 'kub'}>
-                KUB Chain
-              </Tooltip>
-            </BlockchainIcon>
-            <BlockchainIcon
-              onMouseEnter={() => setTooltipVisible('etherlink')}
-              onMouseLeave={() => setTooltipVisible(null)}
-            >
-              <IconImage
-                src="/images/blockchain-icons/etherlink-icon.png"
-                alt="Etherlink"
-              />
-              <Tooltip $visible={tooltipVisible === 'etherlink'}>
-                Etherlink
-              </Tooltip>
-            </BlockchainIcon>
-          </BlockchainSupport>
+          {/* Support Section - Combined Networks and Protocols */}
+          <SupportSection>
+            <SupportGroup>
+              <SupportLabel>Supported Networks:</SupportLabel>
+              <SupportIcon
+                onMouseEnter={() => setTooltipVisible('kaia')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <IconImage
+                  src="/images/blockchain-icons/kaia-token-icon.png"
+                  alt="KAIA"
+                />
+                <Tooltip $visible={tooltipVisible === 'kaia'}>
+                  KAIA
+                </Tooltip>
+              </SupportIcon>
+              <SupportIcon
+                onMouseEnter={() => setTooltipVisible('kub')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <IconImage
+                  src="/images/blockchain-icons/kub-chain-icon.png"
+                  alt="KUB"
+                />
+                <Tooltip $visible={tooltipVisible === 'kub'}>
+                  KUB Chain
+                </Tooltip>
+              </SupportIcon>
+              <SupportIcon
+                onMouseEnter={() => setTooltipVisible('etherlink')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <IconImage
+                  src="/images/blockchain-icons/etherlink-icon.png"
+                  alt="Etherlink"
+                />
+                <Tooltip $visible={tooltipVisible === 'etherlink'}>
+                  Etherlink
+                </Tooltip>
+              </SupportIcon>
+              <RequestButton
+                onClick={openGoogleForm}
+                onMouseEnter={() => setTooltipVisible('request-blockchain')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <PlusIcon />
+                <Tooltip $visible={tooltipVisible === 'request-blockchain'}>
+                  Request new network
+                </Tooltip>
+              </RequestButton>
+            </SupportGroup>
+            
+            <SupportGroup>
+              <SupportLabel>Execution Layer:</SupportLabel>
+              <SupportIcon
+                onMouseEnter={() => setTooltipVisible('kilolend')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <IconImage
+                  src="/images/kilolend-brand.png"
+                  alt="KiloLend"
+                />
+                <Tooltip $visible={tooltipVisible === 'kilolend'}>
+                  KiloLend
+                </Tooltip>
+              </SupportIcon>
+              <RequestButton
+                onClick={openGoogleForm}
+                onMouseEnter={() => setTooltipVisible('request-protocol')}
+                onMouseLeave={() => setTooltipVisible(null)}
+              >
+                <PlusIcon />
+                <Tooltip $visible={tooltipVisible === 'request-protocol'}>
+                  Request new protocol
+                </Tooltip>
+              </RequestButton>
+            </SupportGroup>
+          </SupportSection>
 
         </HeroContent>
 

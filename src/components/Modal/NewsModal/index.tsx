@@ -83,15 +83,25 @@ const CloseButton = styled.button`
 // Hardcoded news data
 const newsItems = [
   {
-  image: './images/poster-desktop.png',
-  title: 'Web Version Is Live',
-  description: 'KiloLend is now available on desktop. Enjoy a wider, clearer experience beyond LINE Mini Dapp.'
-},
-  {
-    image: "./images/poster-agent-v1.png",
-    title: 'New AI DeFi Co-Pilot',
-    description: 'Read our latest blog for our upgraded AI-agent support lend, borrow, swap and loop across KAIA'
+    image: './images/posters/kub-and-etherlink.png',
+    title: 'New Chains Integrated',
+    description: 'Lending and borrowing now open on KUB and Etherlink. Access via Desktop only.'
   },
+  {
+    image: './images/posters/support-openclaw.png',
+    title: 'Now Supporting OpenClaw',
+    description: 'Your DeFi strategy is no longer manual — AI agents handle it 24/7.'
+  },
+  {
+    image: './images/poster-desktop.png',
+    title: 'Web Version Is Live',
+    description: 'KiloLend is now available on desktop. Enjoy a wider, clearer experience beyond LINE Mini Dapp.'
+  },
+  // {
+  //   image: "./images/poster-agent-v1.png",
+  //   title: 'New AI DeFi Co-Pilot',
+  //   description: 'Read our latest blog for our upgraded AI-agent support lend, borrow, swap and loop across KAIA'
+  // },
   {
     image: './images/poster-v1.png',
     title: 'V1 is Live',
