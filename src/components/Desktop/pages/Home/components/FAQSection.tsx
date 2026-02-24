@@ -159,7 +159,7 @@ const FAQ_DATA = [
     answer: `<p>KiloLend is live on multiple mainnets:</p>
     <ul>
       <li><strong>Etherlink:</strong> EVM-compatible network for broader ecosystem access</li>
-      <li><strong>KUB Chain:</strong> Optimized for the Thai market and Bitkub ecosystem</li>
+      <li><strong>KUB Chain:</strong> Optimized for Southeast Asian markets and Bitkub ecosystem</li>
       <li><strong>KAIA:</strong> Integrated with LINE Mini Dapp infrastructure</li>
     </ul>
     <p>Users and agents can operate across supported chains with a unified experience.</p>`

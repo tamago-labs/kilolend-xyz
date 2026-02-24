@@ -17,10 +17,11 @@ import { DesktopPortfolioTable } from './components/DesktopPortfolioTable';
 import { DesktopEmptyState } from './components/DesktopEmptyState';
 import { PortfolioStats } from './components/PortfolioStats';
 import { DesktopWithdrawModal, DesktopRepayModal } from '@/components/Desktop/modals';
+import { useComptrollerContractWeb3 } from '@/hooks/v2/useComptrollerContractWeb3';
+import BigNumber from 'bignumber.js';
 
 // Import components from Balances
 import { MainWalletSection } from '../Balances/components/MainWalletSection';
-import { AgentWalletsBanner } from './components/AgentWalletsBanner';
 
 import { useInterval } from 'usehooks-ts'
 
@@ -77,6 +78,7 @@ export const DesktopPortfolioV2 = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [borrowingPowerData, setBorrowingPowerData] = useState<any>(null);
 
+
   const [portfolioStats, setPortfolioStats] = useState({
     totalSupplyValue: 0,
     totalBorrowValue: 0,
@@ -97,9 +99,11 @@ export const DesktopPortfolioV2 = () => {
   const [repayModalOpen, setRepayModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
+  const { getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds } = useComptrollerContractWeb3()
+
   // Hooks
   const { getUserPosition } = useMarketContract();
-  const { calculateBorrowingPower, isLoading: isBorrowingPowerLoading } = useBorrowingPowerV2();
+  // const { calculateBorrowingPower, isLoading: isBorrowingPowerLoading } = useBorrowingPowerV2();
 
   const getTokenPrice = useCallback((symbol: string): number => {
     // Handle special price mappings
@@ -109,7 +113,7 @@ export const DesktopPortfolioV2 = () => {
       'KUSDT': 'USDT',
       'USDC': 1, // USDC is pegged to USD
       'WXTZ': 'XTZ',
-      'STAKED_KAIA' : "stKAIA"
+      'STAKED_KAIA': "stKAIA"
     };
 
     const mappedPriceKey = priceMap[symbol];
@@ -127,12 +131,99 @@ export const DesktopPortfolioV2 = () => {
 
   // Calculate wallet balance value
   const calculateWalletBalanceValue = useCallback(() => {
-    return balances.reduce((total: number, token: any) => { 
-      const price = getTokenPrice(token.symbol); 
+    return balances.reduce((total: number, token: any) => {
+      const price = getTokenPrice(token.symbol);
       const balance = parseFloat(token.balance || '0');
       return total + (price ? balance * price : 0);
     }, 0);
   }, [balances, getTokenPrice]);
+
+  const calculateBorrowingPower = useCallback(
+    async (userAddress: string): Promise<any> => {
+      try {
+        // Get account liquidity from comptroller (this gives us real borrowing power)
+        const accountLiquidity = await getAccountLiquidity(userAddress);
+
+        // Get entered markets (assets being used as collateral)
+        const enteredMarkets = await getAssetsIn(userAddress);
+        const enteredMarketIds = await getEnteredMarketIds(userAddress);
+
+        let totalCollateralValue = new BigNumber(0);
+        let totalBorrowValue = new BigNumber(0);
+
+        // Calculate totals by checking all user positions
+        for (const market of markets) {
+          if (!market.isActive) continue;
+
+          const m: any = market;
+          const position = await getUserPosition(m.id, userAddress);
+          if (!position) continue;
+
+          const supplyBalance = new BigNumber(position.supplyBalance || '0');
+          const borrowBalance = new BigNumber(position.borrowBalance || '0');
+          const marketPrice = new BigNumber(market.price || '0');
+
+          // Add to collateral value if market is entered
+          if (supplyBalance.isGreaterThan(0) && enteredMarkets.includes(market.marketAddress || '')) {
+            // Get real collateral factor from comptroller
+            const marketInfo = await getMarketInfo(market.marketAddress || '');
+            const collateralValue = supplyBalance
+              .multipliedBy(marketPrice)
+              .multipliedBy(marketInfo.collateralFactor / 100);
+            totalCollateralValue = totalCollateralValue.plus(collateralValue);
+          }
+
+          // Add to borrow value
+          if (borrowBalance.isGreaterThan(0)) {
+            const borrowValue = borrowBalance.multipliedBy(marketPrice);
+            totalBorrowValue = totalBorrowValue.plus(borrowValue);
+          }
+        }
+
+        // Use comptroller's liquidity calculation as the source of truth
+        const borrowingPowerRemaining = new BigNumber(accountLiquidity.liquidity);
+        const borrowingPowerUsed = totalCollateralValue.isGreaterThan(0)
+          ? totalBorrowValue.dividedBy(totalCollateralValue).multipliedBy(100)
+          : new BigNumber(0);
+
+        // Health factor calculation
+        const healthFactor = totalBorrowValue.isGreaterThan(0)
+          ? totalCollateralValue.dividedBy(totalBorrowValue)
+          : new BigNumber(999);
+
+        console.log('Borrowing power calculation:', {
+          totalCollateralValue: totalCollateralValue.toFixed(2),
+          totalBorrowValue: totalBorrowValue.toFixed(2),
+          borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+          enteredMarkets: enteredMarkets.length,
+          healthFactor: healthFactor.toFixed(2),
+          accountLiquidityFromComptroller: accountLiquidity.liquidity
+        });
+
+        return {
+          totalCollateralValue: totalCollateralValue.toFixed(2),
+          totalBorrowValue: totalBorrowValue.toFixed(2),
+          borrowingPowerUsed: borrowingPowerUsed.toFixed(2),
+          borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+          healthFactor: healthFactor.toFixed(2),
+          liquidationThreshold: '80', // Can be made dynamic from comptroller if needed
+          enteredMarkets,
+          enteredMarketIds
+        };
+      } catch (error) {
+        console.error('Error calculating borrowing power:', error);
+        return {
+          totalCollateralValue: '0',
+          totalBorrowValue: '0',
+          borrowingPowerUsed: '0',
+          borrowingPowerRemaining: '0',
+          healthFactor: '0',
+          liquidationThreshold: '80',
+          enteredMarkets: [],
+          enteredMarketIds: []
+        };
+      }
+    }, [getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
 
   // Fetch user positions and borrowing power
   const fetchPositions = useCallback(async () => {
@@ -147,14 +238,14 @@ export const DesktopPortfolioV2 = () => {
     try {
 
       const userPositions: Position[] = [];
- 
+
       // Filter markets by current chain ID
       const currentChainMarkets = selectedAuthMethod === "line_sdk" ? markets.filter(market => market.chainId === 8217) : markets.filter(market => market.chainId === chainId)
       console.log(`Fetching positions for chain ${chainId}, found ${currentChainMarkets.length} markets`);
 
       // Get borrowing power data
       const borrowingPower = await calculateBorrowingPower(account);
-
+ 
       setBorrowingPowerData(borrowingPower);
 
       for (const market of currentChainMarkets) {
@@ -211,7 +302,7 @@ export const DesktopPortfolioV2 = () => {
         totalSupplyValue,
         totalBorrowValue,
         netPortfolioValue: totalSupplyValue - totalBorrowValue,
-        healthFactor: parseFloat(borrowingPower.healthFactor)
+        healthFactor: parseFloat(borrowingPower.healthFactor) 
       });
 
     } catch (error) {
@@ -219,7 +310,7 @@ export const DesktopPortfolioV2 = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [account, markets, chainId, getUserPosition, calculateBorrowingPower, selectedAuthMethod]);
+  }, [account, markets, chainId, getUserPosition, selectedAuthMethod, calculateBorrowingPower]);
 
 
   useEffect(() => {
@@ -312,7 +403,7 @@ export const DesktopPortfolioV2 = () => {
   );
 
   // Combined loading state for portfolio stats
-  const isDataLoading = isLoading || isBorrowingPowerLoading;
+  const isDataLoading = isLoading;
 
   // Enhanced stats calculation
   const walletBalanceValue = calculateWalletBalanceValue();
@@ -424,9 +515,6 @@ export const DesktopPortfolioV2 = () => {
             </SideTabContainer>
           </>
         )}
-
-        {/* Show AI-Agent Wallets Banner for connected users */}
-        {/*{account && <AgentWalletsBanner />}*/}
 
       </MainContent>
 

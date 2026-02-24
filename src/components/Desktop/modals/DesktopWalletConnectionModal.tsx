@@ -192,25 +192,26 @@ export const DesktopWalletConnectionModal = ({ isOpen, onClose }: DesktopWalletC
       <DesktopBaseModal isOpen={isOpen && !showWalletSelection} onClose={onClose} title="Connect Your Wallet" width="480px">
         <ModalContainer>
           <ConnectionOptions>
-            {/* LINE Mini Dapp SDK Option */}
-            <ConnectionCard onClick={handleSocialLogin}>
-              {/*<CardIcon>L</CardIcon>*/}
-              <CardTitle>LINE & Social Login</CardTitle>
-              <CardDescription>
-                Connect using LINE, Google, Apple, Naver, Kakao, or KAIA Wallet.
-              </CardDescription>
-              <Badge>Available on KAIA</Badge>
-            </ConnectionCard>
 
-            {/* Traditional Web3 Wallet Option */}
-            <ConnectionCard onClick={handleWeb3Wallet}>
-              {/*<CardIcon>W</CardIcon>*/}
-              <CardTitle>External Wallets</CardTitle>
+             {/* Traditional Web3 Wallet Option */}
+            <ConnectionCard onClick={handleWeb3Wallet}> 
+              <CardTitle>External Wallet</CardTitle>
               <CardDescription>
                 Connect using MetaMask, Trust Wallet, or other browser extension wallets.
               </CardDescription>
               <Badge>Available on KAIA, KUB & Etherlink</Badge>
             </ConnectionCard>
+
+            {/* LINE Mini Dapp SDK Option */}
+            <ConnectionCard onClick={handleSocialLogin}> 
+              <CardTitle>Social Login</CardTitle>
+              <CardDescription>
+                Continue with LINE, Google, Apple, Naver, or Kakao via Unifi Wallet.
+              </CardDescription>
+              <Badge>KAIA Only</Badge>
+            </ConnectionCard>
+
+           
           </ConnectionOptions>
 
           <CloseButton onClick={onClose}>
