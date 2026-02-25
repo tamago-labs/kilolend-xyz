@@ -2,11 +2,8 @@
 
 import { DesktopBaseModal } from '../shared/DesktopBaseModal';
 import {
-    ModalContent,
-    ModalSubtitle,
-    MarketSelector,
-    Label,
-    Select,
+    ModalContent, 
+    Label, 
     AmountInput,
     InputContainer,
     Input,
@@ -34,12 +31,15 @@ import {
 } from './DesktopRepayModal.styles';
 import { ExternalLink, Check } from 'react-feather';
 import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useContractMarketStore } from '@/stores/contractMarketStore';
 import { useMarketContract, getMarketConfig } from '@/hooks/v2/useMarketContract';
 import { useBorrowingPowerV2 } from '@/hooks/v2/useBorrowingPower';
 import { useTokenApprovalWeb3 } from '@/hooks/v2/useTokenApprovalWeb3';
 import { useWaitForTransactionReceipt } from 'wagmi';
+import { useComptrollerContractWeb3 } from '@/hooks/v2/useComptrollerContractWeb3';
+import { useTokenBalancesV2 } from '@/hooks/useTokenBalancesV2';
+
 
 type TransactionStep = 'preview' | 'confirmation' | 'success';
 
@@ -61,12 +61,16 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
     const [isApproving, setIsApproving] = useState(false);
     const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}` | undefined>(undefined);
     const [repayTxHash, setRepayTxHash] = useState<`0x${string}` | undefined>(undefined);
-
+ 
     const { account } = useWalletAccountStore();
     const { markets } = useContractMarketStore();
-    const { repay } = useMarketContract();
-    const { calculateBorrowingPower, getUserPosition } = useBorrowingPowerV2();
+    const marketContract = useMarketContract();
+    const repay = marketContract.repay
+    const { getUserPosition } = useBorrowingPowerV2();
+    
     const { checkAllowance, approveToken } = useTokenApprovalWeb3();
+    const { getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds } = useComptrollerContractWeb3()  
+    const { balances: tokenBalances } = useTokenBalancesV2();
 
     // Wait for approval transaction receipt
     const { isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({
@@ -84,7 +88,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
         },
     });
 
-    useEffect(() => { 
+    useEffect(() => {
         preSelectedMarket && setSelectedMarket(preSelectedMarket);
     }, [preSelectedMarket, markets, getUserPosition]);
 
@@ -133,12 +137,19 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
     const remainingUSD = selectedMarket ? remainingDebt * selectedMarket.price : 0;
     const isFullRepayment = amountNum >= parseFloat(selectedMarketDebt) * 0.99;
 
+    // Get user balance for the selected market
+    const userBalance = selectedMarket ? 
+        (tokenBalances.find(balance => 
+            balance.symbol === selectedMarket.symbol || 
+            (selectedMarket.tokenAddress && balance.address === selectedMarket.tokenAddress)
+        )?.balance || '0') : '0';
+
     const [borrowingPowerData, setBorrowingPowerData] = useState<any>(null);
 
     // Calculate health factor impact
     useEffect(() => {
         const calculateImpact = async () => {
-            if (!account || !selectedMarket || !amount) return;
+            if (!account || !selectedMarket) return;
 
             try {
                 const currentBorrowingPower = await calculateBorrowingPower(account);
@@ -149,7 +160,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
         };
 
         calculateImpact();
-    }, [account, selectedMarket, amount]);
+    }, [account, selectedMarket]);
 
     const currentHealthFactor = borrowingPowerData?.healthFactor ? parseFloat(borrowingPowerData.healthFactor) : 999;
     const totalCollateralValue = borrowingPowerData?.totalCollateralValue ? parseFloat(borrowingPowerData.totalCollateralValue) : 0;
@@ -159,7 +170,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
     const newTotalBorrowValue = totalBorrowValue - amountUSD;
     const newHealthFactor = newTotalBorrowValue > 0 ? totalCollateralValue / newTotalBorrowValue : 999;
     const healthFactorChange = newHealthFactor - currentHealthFactor;
- 
+
     const handleMax = () => {
         setAmount(selectedMarketDebt);
     };
@@ -229,6 +240,95 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
         }
     };
 
+    const calculateBorrowingPower = useCallback(
+        async (userAddress: string): Promise<any> => {
+            try {
+
+                // Get account liquidity from comptroller (this gives us real borrowing power)
+                const accountLiquidity = await getAccountLiquidity(userAddress);
+
+                // Get entered markets (assets being used as collateral)
+                const enteredMarkets = await getAssetsIn(userAddress);
+                const enteredMarketIds = await getEnteredMarketIds(userAddress);
+
+                let totalCollateralValue = new BigNumber(0);
+                let totalBorrowValue = new BigNumber(0);
+
+                // Calculate totals by checking all user positions
+                for (const market of markets) {
+                    if (!market.isActive) continue;
+
+                    const m: any = market;
+                    const position = await marketContract.getUserPosition(m.id, userAddress);
+                    if (!position) continue;
+
+                    const supplyBalance = new BigNumber(position.supplyBalance || '0');
+                    const borrowBalance = new BigNumber(position.borrowBalance || '0');
+                    const marketPrice = new BigNumber(market.price || '0');
+
+                    // Add to collateral value if market is entered
+                    if (supplyBalance.isGreaterThan(0) && enteredMarkets.includes(market.marketAddress || '')) {
+                        // Get real collateral factor from comptroller
+                        const marketInfo = await getMarketInfo(market.marketAddress || '');
+                        const collateralValue = supplyBalance
+                            .multipliedBy(marketPrice)
+                            .multipliedBy(marketInfo.collateralFactor / 100);
+                        totalCollateralValue = totalCollateralValue.plus(collateralValue);
+                    }
+
+                    // Add to borrow value
+                    if (borrowBalance.isGreaterThan(0)) {
+                        const borrowValue = borrowBalance.multipliedBy(marketPrice);
+                        totalBorrowValue = totalBorrowValue.plus(borrowValue);
+                    }
+                }
+
+                // Use comptroller's liquidity calculation as the source of truth
+                const borrowingPowerRemaining = new BigNumber(accountLiquidity.liquidity);
+                const borrowingPowerUsed = totalCollateralValue.isGreaterThan(0)
+                    ? totalBorrowValue.dividedBy(totalCollateralValue).multipliedBy(100)
+                    : new BigNumber(0);
+
+                // Health factor calculation
+                const healthFactor = totalBorrowValue.isGreaterThan(0)
+                    ? totalCollateralValue.dividedBy(totalBorrowValue)
+                    : new BigNumber(999);
+
+                console.log('Borrowing power calculation:', {
+                    totalCollateralValue: totalCollateralValue.toFixed(2),
+                    totalBorrowValue: totalBorrowValue.toFixed(2),
+                    borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+                    enteredMarkets: enteredMarkets.length,
+                    healthFactor: healthFactor.toFixed(2),
+                    accountLiquidityFromComptroller: accountLiquidity.liquidity
+                });
+
+                return {
+                    totalCollateralValue: totalCollateralValue.toFixed(2),
+                    totalBorrowValue: totalBorrowValue.toFixed(2),
+                    borrowingPowerUsed: borrowingPowerUsed.toFixed(2),
+                    borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+                    healthFactor: healthFactor.toFixed(2),
+                    liquidationThreshold: '80', // Can be made dynamic from comptroller if needed
+                    enteredMarkets,
+                    enteredMarketIds
+                };
+            } catch (error) {
+                console.error('Error calculating borrowing power:', error);
+                return {
+                    totalCollateralValue: '0',
+                    totalBorrowValue: '0',
+                    borrowingPowerUsed: '0',
+                    borrowingPowerRemaining: '0',
+                    healthFactor: '0',
+                    liquidationThreshold: '80',
+                    enteredMarkets: [],
+                    enteredMarketIds: []
+                };
+            }
+        }, [markets, marketContract, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
+
+
     const handleClose = () => {
         if (currentStep === 'success') {
             onClose();
@@ -256,7 +356,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
     const isValid = selectedMarket && amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(selectedMarketDebt);
 
     const renderPreview = () => (
-        <> 
+        <>
             <AmountInput>
                 <Label>Amount</Label>
                 <InputContainer>
@@ -271,6 +371,10 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
                 <BalanceInfo>
                     <span>Current Debt: {parseFloat(selectedMarketDebt).toFixed(4)} {selectedMarket?.symbol}</span>
                     <span>${(parseFloat(selectedMarketDebt) * (selectedMarket?.price || 0)).toFixed(2)}</span>
+                </BalanceInfo>
+                <BalanceInfo>
+                    <span>Wallet Balance: {parseFloat(userBalance).toFixed(4)} {selectedMarket?.symbol}</span>
+                    <span>${(parseFloat(userBalance) * (selectedMarket?.price || 0)).toFixed(2)}</span>
                 </BalanceInfo>
             </AmountInput>
 
@@ -319,7 +423,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
                                 </PreviewRow>
                             </>
                         )}
-                        
+
                     </PreviewSection>
 
                     {isFullRepayment && (
@@ -442,7 +546,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
                 <DetailRow>
                     <DetailLabel>Borrow APR</DetailLabel>
                     <DetailValue>{selectedMarket?.borrowAPR.toFixed(2)}%</DetailValue>
-                </DetailRow> 
+                </DetailRow>
                 {transactionResult?.hash && (
                     <DetailRow>
                         <DetailLabel>Transaction</DetailLabel>

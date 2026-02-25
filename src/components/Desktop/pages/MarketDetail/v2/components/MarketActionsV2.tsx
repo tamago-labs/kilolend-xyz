@@ -276,8 +276,6 @@ export const MarketActionsV2 = ({
     async (userAddress: string): Promise<any> => {
       try {
 
-   
-
         // Get account liquidity from comptroller (this gives us real borrowing power)
         const accountLiquidity = await getAccountLiquidity(userAddress);
 
