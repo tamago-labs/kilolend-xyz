@@ -229,6 +229,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
     hasWallet,
     messageLimitStatus,
   } = useDesktopAIV2State();
+ 
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -258,8 +259,9 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
     if (!account) return;
 
     try {
-      const response = await aiChatServiceV2.getMessages(account, selectedChain);
  
+      const response = await aiChatServiceV2.getMessages(walletStatus.aiWalletAddress, selectedChain);
+  
       const chatMessages = response.messages.map((msg: any) => ({
         id: `msg-${msg.message_id}`,
         type: msg.role === 'user' ? 'user' as const : 'agent' as const,
@@ -314,7 +316,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
 
     try {
       // Call API to clear conversation history
-      await aiChatServiceV2.deleteMessages(account, selectedChain);
+      await aiChatServiceV2.deleteMessages(walletStatus.aiWalletAddress, selectedChain);
       
       // Clear local state and localStorage
       setMessages([]);

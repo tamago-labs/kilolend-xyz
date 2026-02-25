@@ -11,7 +11,7 @@ interface MessageLimitData {
   selectedChain?: number;
 }
 
-const MESSAGES_PER_DAY = 3;
+const MESSAGES_PER_DAY = 5;
 const STORAGE_KEY = 'ai-chat-message-limit';
 
 export const MessageLimitUtil = {

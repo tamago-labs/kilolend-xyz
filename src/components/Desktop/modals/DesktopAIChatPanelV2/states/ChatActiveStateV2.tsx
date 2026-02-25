@@ -477,13 +477,13 @@ export const ChatActiveStateV2: React.FC<ChatActiveStateV2Props> = ({
       <MessagesContainer>
         {messages.length === 0 ? (
           <WelcomeMessage>
-            <WelcomeIcon 
+            {/*<WelcomeIcon 
               src={agent.image} 
               alt={agent.name}
               onError={(e) => {
                 e.currentTarget.src = '/images/icon-robot.png';
               }}
-            />
+            />*/}
             <WelcomeTitle>Agent Playground</WelcomeTitle>
             <WelcomeText>
               You are in playground mode with limited daily usage. We encourage you to use OpenClaw agent for full functionality. Try checking our docs for how to setup.
