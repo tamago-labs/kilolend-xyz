@@ -447,7 +447,7 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
             </SupportGroup>
             
             <SupportGroup>
-              <SupportLabel>Execution Layer:</SupportLabel>
+              <SupportLabel>Supported Protocols:</SupportLabel>
               <SupportIcon
                 onMouseEnter={() => setTooltipVisible('kilolend')}
                 onMouseLeave={() => setTooltipVisible(null)}

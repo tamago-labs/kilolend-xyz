@@ -1,7 +1,7 @@
 "use client";
 
 import styled from 'styled-components';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ContractMarket } from '@/stores/contractMarketStore';
 import { formatUSD, formatPercent, isValidAmount, parseUserAmount } from '@/utils/formatters';
 import { useTokenBalancesV2 } from '@/hooks/useTokenBalancesV2';
@@ -11,8 +11,11 @@ import { useAuth } from '@/contexts/ChainContext';
 import { DesktopTransactionModalWeb3 } from '../../components/DesktopTransactionModalWeb3';
 import { DesktopTransactionModal } from "../../components/DesktopTransactionModal"
 import { useMultiChainMarketData } from '@/hooks/v2/useMultiChainMarketData';
-
+import BigNumber from 'bignumber.js';
 import { useInterval } from 'usehooks-ts'
+import { useComptrollerContractWeb3 } from '@/hooks/v2/useComptrollerContractWeb3';
+import { useContractMarketStore } from '@/stores/contractMarketStore';
+import { useMarketContract } from '@/hooks/v2/useMarketContract';
 
 import { CHAIN_CONFIGS, CHAIN_MARKETS, ChainId, MarketKey } from '@/utils/chainConfig';
 
@@ -231,12 +234,15 @@ export const MarketActionsV2 = ({
   const [amount, setAmount] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
+  const { getUserPosition } = useMarketContract();
+  const { getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds } = useComptrollerContractWeb3()  
   const { isLoading } = useMultiChainMarketData()
+  const { markets } = useContractMarketStore();
   const { account } = useWalletAccountStore();
   const { selectedAuthMethod } = useAuth();
   const { balances: tokenBalances } = useTokenBalancesV2();
-  const { calculateBorrowingPower, calculateMaxBorrowAmount , isLoading: isBorrowingPowerLoading } = useBorrowingPowerV2();
+  const { calculateMaxBorrowAmount , isLoading: isBorrowingPowerLoading } = useBorrowingPowerV2();
   const [borrowingPowerData, setBorrowingPowerData] = useState<any>(null);
   const [maxBorrowData, setMaxBorrowData] = useState<any>(null);
 
@@ -247,25 +253,7 @@ export const MarketActionsV2 = ({
   const balanceData = getBalanceByMarketId(marketId, tokenBalances);
   const userBalance = balanceData?.balance || '0.00';
   const fullPrecisionBalance = balanceData?.balance || '0';
-
-  // Load borrowing power data when account changes
-  // useEffect(() => {
-  //   const loadBorrowingData = async () => {
-
-  //     if (!account || !marketId || !isLoading) return;
-
-  //     try {
-  //       const borrowingPower = await calculateBorrowingPower(account);
-
-  //       console.log("origin borrowingPower:", borrowingPower)
-
-  //       setBorrowingPowerData(borrowingPower);
-  //     } catch (error) {
-  //       console.error('Error loading borrowing data:', error);
-  //     }
-  //   };
-  //   loadBorrowingData();
-  // }, [account, marketId, isLoading]);
+ 
 
   // Load max borrow data when asset is selected for borrow tab
   useEffect(() => {
@@ -281,6 +269,108 @@ export const MarketActionsV2 = ({
     };
     loadMaxBorrowData();
   }, [marketId, account, activeTab]);
+
+ 
+
+  const calculateBorrowingPower = useCallback(
+    async (userAddress: string): Promise<any> => {
+      try {
+
+   
+
+        // Get account liquidity from comptroller (this gives us real borrowing power)
+        const accountLiquidity = await getAccountLiquidity(userAddress);
+
+        // Get entered markets (assets being used as collateral)
+        const enteredMarkets = await getAssetsIn(userAddress);
+        const enteredMarketIds = await getEnteredMarketIds(userAddress);
+
+        let totalCollateralValue = new BigNumber(0);
+        let totalBorrowValue = new BigNumber(0);
+
+        // Calculate totals by checking all user positions
+        for (const market of markets) {
+          if (!market.isActive) continue;
+
+          const m: any = market;
+          const position = await getUserPosition(m.id, userAddress);
+          if (!position) continue;
+
+          const supplyBalance = new BigNumber(position.supplyBalance || '0');
+          const borrowBalance = new BigNumber(position.borrowBalance || '0');
+          const marketPrice = new BigNumber(market.price || '0');
+
+          // Add to collateral value if market is entered
+          if (supplyBalance.isGreaterThan(0) && enteredMarkets.includes(market.marketAddress || '')) {
+            // Get real collateral factor from comptroller
+            const marketInfo = await getMarketInfo(market.marketAddress || '');
+            const collateralValue = supplyBalance
+              .multipliedBy(marketPrice)
+              .multipliedBy(marketInfo.collateralFactor / 100);
+            totalCollateralValue = totalCollateralValue.plus(collateralValue);
+          }
+
+          // Add to borrow value
+          if (borrowBalance.isGreaterThan(0)) {
+            const borrowValue = borrowBalance.multipliedBy(marketPrice);
+            totalBorrowValue = totalBorrowValue.plus(borrowValue);
+          }
+        }
+
+        // Use comptroller's liquidity calculation as the source of truth
+        const borrowingPowerRemaining = new BigNumber(accountLiquidity.liquidity);
+        const borrowingPowerUsed = totalCollateralValue.isGreaterThan(0)
+          ? totalBorrowValue.dividedBy(totalCollateralValue).multipliedBy(100)
+          : new BigNumber(0);
+
+        // Health factor calculation
+        const healthFactor = totalBorrowValue.isGreaterThan(0)
+          ? totalCollateralValue.dividedBy(totalBorrowValue)
+          : new BigNumber(999);
+
+        console.log('Borrowing power calculation:', {
+          totalCollateralValue: totalCollateralValue.toFixed(2),
+          totalBorrowValue: totalBorrowValue.toFixed(2),
+          borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+          enteredMarkets: enteredMarkets.length,
+          healthFactor: healthFactor.toFixed(2),
+          accountLiquidityFromComptroller: accountLiquidity.liquidity
+        });
+
+        return {
+          totalCollateralValue: totalCollateralValue.toFixed(2),
+          totalBorrowValue: totalBorrowValue.toFixed(2),
+          borrowingPowerUsed: borrowingPowerUsed.toFixed(2),
+          borrowingPowerRemaining: borrowingPowerRemaining.toFixed(2),
+          healthFactor: healthFactor.toFixed(2),
+          liquidationThreshold: '80', // Can be made dynamic from comptroller if needed
+          enteredMarkets,
+          enteredMarketIds
+        };
+      } catch (error) {
+        console.error('Error calculating borrowing power:', error);
+        return {
+          totalCollateralValue: '0',
+          totalBorrowValue: '0',
+          borrowingPowerUsed: '0',
+          borrowingPowerRemaining: '0',
+          healthFactor: '0',
+          liquidationThreshold: '80',
+          enteredMarkets: [],
+          enteredMarketIds: []
+        };
+      }
+    }, [markets, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
+
+
+  // const loadBorrowingPower = useCallback(async () => {
+  //   console.log("load for ", account)
+
+  //   const result = await calculateBorrowingPower(account)
+
+  //   console.log("account result: ", result)
+
+  // },[account])
 
   // Validate amount against balance or borrow limit
   useEffect(() => {
@@ -339,6 +429,7 @@ export const MarketActionsV2 = ({
     setIsModalOpen(false);
     setAmount('');
     setValidationError(null);
+    setDelay(1000)
   };
 
   // Reset amount when switching tabs
@@ -347,18 +438,19 @@ export const MarketActionsV2 = ({
     setValidationError(null);
     onTabChange(tab);
   };
+ 
 
   useInterval(
     () => {
-      if (account && marketId && !isBorrowingPowerLoading && !isLoading) {
-        calculateBorrowingPower(account).then((borrowingPower) => {
+      if (account && !isLoading) {
+          calculateBorrowingPower(account).then((borrowingPower) => { 
            setBorrowingPowerData(borrowingPower);
            setDelay(60000)
         })
       }
     },
-    delay,
-  )
+    delay
+    )
 
   return (
     <>

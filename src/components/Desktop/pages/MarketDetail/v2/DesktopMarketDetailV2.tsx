@@ -233,6 +233,7 @@ export const DesktopMarketDetailV2 = ({ chain, token }: DesktopMarketDetailV2Pro
     setActiveTab(tab);
   };
 
+
   return (
     <MarketDetailContainer>
       <MainContent>

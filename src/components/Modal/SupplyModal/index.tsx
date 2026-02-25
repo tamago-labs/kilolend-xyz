@@ -27,6 +27,7 @@ import {
   NavButton,
   ErrorMessage,
   ApprovalMessage,
+  WarningMessage,
 } from "./styled"
 
 import { truncateToSafeDecimals, validateAmountAgainstBalance, isAmountExceedingBalance, getSafeMaxAmount } from "@/utils/tokenUtils"
@@ -464,6 +465,11 @@ export const SupplyModal = ({ isOpen, onClose }: SupplyModalProps) => {
         </StepProgress>
 
         <StepContent>
+
+          {/* Always show Unifi warning banner */}
+          <WarningMessage>
+            ⚠️ Important Notice: Due to breaking changes on Unifi (Previously LINE Mini Dapp Portal), many functions on Mini Dapp are not working. Please access from Desktop for full functionality.
+          </WarningMessage>
 
           {(!isTransacting && currentStep !== 4) && (
             <>

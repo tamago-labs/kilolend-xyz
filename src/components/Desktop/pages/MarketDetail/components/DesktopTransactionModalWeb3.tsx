@@ -637,7 +637,7 @@ export const DesktopTransactionModalWeb3 = ({
               />
             </HealthFactorBar>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-              {`Safe: > 1.5 • Warning: 1.3-1.5 • Danger: 1.2-1.3 • Critical: < 1.2`}
+              {`Safe: > 1.5 • Warning: 1.2-1.5 • Danger: < 1.2`}
             </div>
           </div>
 
