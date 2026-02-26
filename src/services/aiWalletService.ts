@@ -59,6 +59,28 @@ interface DeleteAPIKeyResponse {
   action: 'api_key_deleted';
 }
 
+interface WithdrawNativeRequest {
+  amount: string;
+  chain_id: number;
+}
+
+interface WithdrawERC20Request {
+  token_symbol: string;
+  amount: string;
+  chain_id: number;
+}
+
+interface WithdrawResponse {
+  success: boolean;
+  transaction_hash?: string;
+  explorer_url?: string;
+  message: string;
+  amount: string;
+  recipient: string;
+  token_symbol?: string;
+  chain_id: number;
+}
+
 interface APIError {
   error: string;
   statusCode?: number;
@@ -271,101 +293,8 @@ class AIWalletService {
       throw error;
     }
   }
-
-  /**
-   * Get token balances for an AI wallet address
-   * This method is deprecated - use useAITokenBalances hook instead
-   */
-  async getAIWalletBalances(aiWalletAddress: string): Promise<any[]> {
-    try {
-      // This method should not be used anymore
-      // Use useAITokenBalances hook in components instead
-      console.warn('getAIWalletBalances is deprecated. Use useAITokenBalances hook instead.');
-      
-      // Return empty array for now
-      return [];
-    } catch (error) {
-      console.error('Error getting AI wallet balances:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Transfer tokens from main wallet to AI wallet
-   */
-  async transferToAIWallet(
-    fromAddress: string,
-    toAddress: string,
-    token: string,
-    amount: string
-  ): Promise<string> {
-    try {
-      // This would integrate with your existing transaction system
-      // For now, this is a placeholder implementation
-      const response = await fetch('/api/transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: toAddress,
-          token,
-          amount,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Transfer failed');
-      }
-
-      return data.transactionHash;
-    } catch (error) {
-      console.error('Error transferring to AI wallet:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Transfer tokens from AI wallet to main wallet
-   */
-  async transferFromAIWallet(
-    fromAddress: string,
-    toAddress: string,
-    token: string,
-    amount: string
-  ): Promise<string> {
-    try {
-      // This would integrate with your existing transaction system
-      // For AI wallet transactions, you might need to sign with the AI wallet private key
-      // This would typically be handled on the backend for security
-      const response = await fetch('/api/transfer-from-ai-wallet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: toAddress,
-          token,
-          amount,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Transfer failed');
-      }
-
-      return data.transactionHash;
-    } catch (error) {
-      console.error('Error transferring from AI wallet:', error);
-      throw error;
-    }
-  }
+ 
+  
 
   /**
    * Validate Ethereum address format
@@ -380,6 +309,111 @@ class AIWalletService {
   formatAddress(address: string): string {
     if (!address || address.length < 10) return address;
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  /**
+   * Withdraw native tokens from AI wallet to user's main wallet
+   */
+  async withdrawNativeToken(userAddress: string, amount: string, chainId: number): Promise<WithdrawResponse> {
+    try {
+      // First get the user's API key
+      const apiKeyResponse = await this.getAPIKey(userAddress);
+      
+      if (!apiKeyResponse.apiKey) {
+        throw new Error("You don't have an active API key. Generate one in the API Key section to enable withdrawals.");
+      }
+
+      const requestBody: WithdrawNativeRequest = {
+        amount,
+        chain_id: chainId
+      };
+
+      const response = await fetch(`https://api.kilolend.xyz/withdraw/native`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': apiKeyResponse.apiKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || 'Failed to withdraw native tokens');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error withdrawing native tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Withdraw ERC-20 tokens from AI wallet to user's main wallet
+   */
+  async withdrawERC20Token(userAddress: string, tokenSymbol: string, amount: string, chainId: number): Promise<WithdrawResponse> {
+    try {
+      // First get the user's API key
+      const apiKeyResponse = await this.getAPIKey(userAddress);
+      
+      if (!apiKeyResponse.apiKey) {
+        throw new Error("You don't have an active API key. Generate one in the API Key section to enable withdrawals.");
+      }
+
+      const requestBody: WithdrawERC20Request = {
+        token_symbol: tokenSymbol.toUpperCase(),
+        amount,
+        chain_id: chainId
+      };
+
+      const response = await fetch(`https://api.kilolend.xyz/withdraw/erc20`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': apiKeyResponse.apiKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || 'Failed to withdraw ERC-20 tokens');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error withdrawing ERC-20 tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a token is native on a specific chain
+   */
+  isNativeToken(symbol: string, chainId: number): boolean {
+    const nativeTokens: Record<number, string[]> = {
+      8217: ['KAIA'],
+      96: ['KUB'],
+      42793: ['XTZ'],
+      128123: ['XTZ']
+    };
+    
+    const chainNativeTokens = nativeTokens[chainId] || [];
+    return chainNativeTokens.includes(symbol.toUpperCase());
+  }
+
+  /**
+   * Withdraw tokens (automatically detects native vs ERC-20)
+   */
+  async withdrawToken(userAddress: string, tokenSymbol: string, amount: string, chainId: number): Promise<WithdrawResponse> {
+    if (this.isNativeToken(tokenSymbol, chainId)) {
+      return this.withdrawNativeToken(userAddress, amount, chainId);
+    } else {
+      return this.withdrawERC20Token(userAddress, tokenSymbol, amount, chainId);
+    }
   }
 
   /**
@@ -399,5 +433,8 @@ export type {
   GetAPIKeyResponse,
   CreateAPIKeyResponse,
   DeleteAPIKeyResponse,
+  WithdrawNativeRequest,
+  WithdrawERC20Request,
+  WithdrawResponse,
   APIError 
 };
