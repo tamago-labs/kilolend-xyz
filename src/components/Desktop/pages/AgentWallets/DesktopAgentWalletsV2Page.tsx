@@ -127,9 +127,9 @@ export const DesktopAgentWalletsV2Page = () => {
   const tabs = [
     { id: 'balance' as TabType, label: 'Balance' },
     { id: 'deposit' as TabType, label: 'Deposit' },
-    { id: 'withdraw' as TabType, label: 'Withdraw' },
-    // { id: 'activity' as TabType, label: 'Activity Log' },
+    { id: 'withdraw' as TabType, label: 'Withdraw' }, 
     { id: 'apikeys' as TabType, label: 'API Keys' },
+    { id: 'activity' as TabType, label: 'Activity Log' },
     // { id: 'skills' as TabType, label: 'Agent Skills' },
     // { id: 'security' as TabType, label: 'Security & Limits' },
   ];
@@ -223,7 +223,7 @@ export const DesktopAgentWalletsV2Page = () => {
               Activity Log
             </ContentTitle>
             <ContentSubtitle>
-              Track all activities including deposits, withdrawals, trades, and other operations
+              View your chat history and conversations with your AI agent
             </ContentSubtitle>
             <ActivityLogContent 
               aiWalletData={aiWalletData}

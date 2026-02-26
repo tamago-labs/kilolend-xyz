@@ -418,46 +418,7 @@ export const APIKeyDate = styled.span`
   font-size: 12px;
   color: #94a3b8;
 `;
-
-// Activity Log styles
-export const ActivityItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-bottom: 12px;
-`;
-
-export const ActivityInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-export const ActivityType = styled.span<{ $type: 'deposit' | 'withdraw' | 'trade' | 'error' }>`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ $type }) => 
-    $type === 'deposit' ? '#06C755' :
-    $type === 'withdraw' ? '#f59e0b' :
-    $type === 'trade' ? '#3b82f6' :
-    '#dc2626'
-  };
-`;
-
-export const ActivityDetails = styled.span`
-  font-size: 13px;
-  color: #64748b;
-`;
-
-export const ActivityDate = styled.span`
-  font-size: 12px;
-  color: #94a3b8;
-  text-align: right;
-`;
-
+ 
 // Skills styles
 export const SkillItem = styled.div`
   display: flex;

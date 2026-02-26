@@ -215,7 +215,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMessageLoading, setIsMessageLoading] = useState(false);
   const { account } = useWalletAccountStore();
-  
+
   const {
     currentState,
     walletStatus,
@@ -229,7 +229,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
     hasWallet,
     messageLimitStatus,
   } = useDesktopAIV2State();
- 
+
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -249,7 +249,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
   }, [isOpen, onToggle]);
 
   // Load messages from backend when component mounts
-  useEffect(() => { 
+  useEffect(() => {
     if (isOpen && account && hasWallet) {
       loadMessageHistory();
     }
@@ -257,11 +257,13 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
 
   const loadMessageHistory = async () => {
     if (!account) return;
+    if (!walletStatus) return;
+    if (!walletStatus.aiWalletAddress) return;
 
     try {
- 
+
       const response = await aiChatServiceV2.getMessages(walletStatus.aiWalletAddress, selectedChain);
-  
+
       const chatMessages = response.messages.map((msg: any) => ({
         id: `msg-${msg.message_id}`,
         type: msg.role === 'user' ? 'user' as const : 'agent' as const,
@@ -294,7 +296,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
     try {
       // Save to localStorage
       MessageLimitUtil.saveMessages(account, newMessages);
-      
+
       // The actual message sending is handled by ChatActiveStateV2
       // This is just a placeholder for the interface
     } catch (error) {
@@ -313,11 +315,13 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
 
   const handleClearChatHistory = async () => {
     if (!account) return;
+    if (!walletStatus) return;
+    if (!walletStatus.aiWalletAddress) return;
 
     try {
       // Call API to clear conversation history
       await aiChatServiceV2.deleteMessages(walletStatus.aiWalletAddress, selectedChain);
-      
+
       // Clear local state and localStorage
       setMessages([]);
       MessageLimitUtil.clearMessages(account);
