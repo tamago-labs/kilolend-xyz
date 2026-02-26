@@ -230,6 +230,7 @@ export const MarketActionsV2 = ({
   onTabChange,
 }: MarketActionsV2Props) => {
 
+  
   const [delay, setDelay] = useState<number>(1000)
   const [amount, setAmount] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -286,8 +287,10 @@ export const MarketActionsV2 = ({
         let totalCollateralValue = new BigNumber(0);
         let totalBorrowValue = new BigNumber(0);
 
+        const currentChainMarkets = selectedAuthMethod === "line_sdk" ? markets.filter(market => market.chainId === 8217) : markets
+
         // Calculate totals by checking all user positions
-        for (const market of markets) {
+        for (const market of currentChainMarkets) {
           if (!market.isActive) continue;
 
           const m: any = market;
@@ -358,7 +361,7 @@ export const MarketActionsV2 = ({
           enteredMarketIds: []
         };
       }
-    }, [markets, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
+    }, [markets, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds, selectedAuthMethod])
 
 
   // const loadBorrowingPower = useCallback(async () => {

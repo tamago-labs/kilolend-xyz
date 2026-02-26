@@ -146,17 +146,21 @@ export const DesktopPortfolioV2 = () => {
 
         // Get entered markets (assets being used as collateral)
         const enteredMarkets = await getAssetsIn(userAddress);
+
         const enteredMarketIds = await getEnteredMarketIds(userAddress);
 
         let totalCollateralValue = new BigNumber(0);
         let totalBorrowValue = new BigNumber(0);
 
+        const currentChainMarkets = selectedAuthMethod === "line_sdk" ? markets.filter(market => market.chainId === 8217) : markets.filter(market => market.chainId === chainId)
+
         // Calculate totals by checking all user positions
-        for (const market of markets) {
+        for (const market of currentChainMarkets) {
           if (!market.isActive) continue;
 
           const m: any = market;
           const position = await getUserPosition(m.id, userAddress);
+
           if (!position) continue;
 
           const supplyBalance = new BigNumber(position.supplyBalance || '0');
@@ -223,7 +227,7 @@ export const DesktopPortfolioV2 = () => {
           enteredMarketIds: []
         };
       }
-    }, [getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
+    }, [getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds, selectedAuthMethod])
 
   // Fetch user positions and borrowing power
   const fetchPositions = useCallback(async () => {

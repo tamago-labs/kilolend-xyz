@@ -39,7 +39,7 @@ import { useTokenApprovalWeb3 } from '@/hooks/v2/useTokenApprovalWeb3';
 import { useWaitForTransactionReceipt } from 'wagmi';
 import { useComptrollerContractWeb3 } from '@/hooks/v2/useComptrollerContractWeb3';
 import { useTokenBalancesV2 } from '@/hooks/useTokenBalancesV2';
-
+import { useAuth } from '@/contexts/ChainContext';
 
 type TransactionStep = 'preview' | 'confirmation' | 'success';
 
@@ -51,6 +51,9 @@ interface DesktopRepayModalProps {
 }
 
 export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: DesktopRepayModalProps) => {
+    
+    
+    const { selectedAuthMethod } = useAuth();
     const [selectedMarket, setSelectedMarket] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -254,8 +257,10 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
                 let totalCollateralValue = new BigNumber(0);
                 let totalBorrowValue = new BigNumber(0);
 
+                const currentChainMarkets = selectedAuthMethod === "line_sdk" ? markets.filter(market => market.chainId === 8217) : markets
+
                 // Calculate totals by checking all user positions
-                for (const market of markets) {
+                for (const market of currentChainMarkets) {
                     if (!market.isActive) continue;
 
                     const m: any = market;
@@ -326,7 +331,7 @@ export const DesktopRepayModalWeb3 = ({ isOpen, onClose, preSelectedMarket }: De
                     enteredMarketIds: []
                 };
             }
-        }, [markets, marketContract, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds])
+        }, [markets, marketContract, getAccountLiquidity, getMarketInfo, getAssetsIn, getEnteredMarketIds, selectedAuthMethod])
 
 
     const handleClose = () => {

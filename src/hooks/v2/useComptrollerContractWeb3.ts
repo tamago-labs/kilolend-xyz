@@ -4,6 +4,7 @@ import { COMPTROLLER_ABI } from '@/utils/contractABIs';
 import { CHAIN_CONTRACTS, ChainId } from '@/utils/chainConfig';
 import { MARKET_CONFIG_V1, MarketId } from '@/utils/contractConfig';
 import { useChainId, useReadContract, useWriteContract } from 'wagmi';
+import { useAuth } from '@/contexts/ChainContext';
 
 export interface AccountLiquidity {
   error: number;
@@ -60,8 +61,15 @@ const getComptrollerAddress = (chainId: number): string => {
  * Web3-based Comptroller contract hook using wagmi
  */
 export const useComptrollerContractWeb3 = (): ComptrollerContractHook => {
-  const chainId = useChainId();
+
+  const { selectedAuthMethod } = useAuth()
+
+  let chainId = useChainId();
   const writeContract = useWriteContract();
+
+  if (selectedAuthMethod === "line_sdk") {
+      chainId = 8217
+  }
 
   const comptrollerAddress = getComptrollerAddress(Number(chainId));
 
