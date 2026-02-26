@@ -102,14 +102,14 @@ export const CHAIN_CONFIGS: ChainConfig[] = [
     id: 96,
     name: 'KUB Chain',
     symbol: 'KUB',
-    icon: '/images/icon-kilo.png', // Fallback icon
+    icon: '/images/blockchain-icons/kub-chain-icon.png',
     color: '#FF6B35'
   },
   {
     id: 42793,
     name: 'Etherlink',
     symbol: 'XTZ',
-    icon: '/images/kilolend-logo.png', // Fallback icon
+    icon: '/images/blockchain-icons/etherlink-icon.png',
     color: '#4A90E2'
   }
 ];

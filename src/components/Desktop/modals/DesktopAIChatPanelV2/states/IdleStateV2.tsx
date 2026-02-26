@@ -219,13 +219,9 @@ export const IdleStateV2: React.FC<IdleStateV2Props> = ({
           </AIIcon>
           <Title>Agent Playground</Title>
           <Subtitle>You can use this environment to evaluate AI agent capabilities</Subtitle>
-        </Header>
-
+        </Header> 
         <Content> 
-          <ActionSection>
-            <WalletStatusIcon>
-              <User size={32} />
-            </WalletStatusIcon>
+          <ActionSection> 
             <WalletStatusMessage>
               Please connect your wallet first to continue
             </WalletStatusMessage>

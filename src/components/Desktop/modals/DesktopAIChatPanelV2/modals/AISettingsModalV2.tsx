@@ -1,8 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { X, RotateCcw, BarChart, Globe } from 'react-feather';
-import { CHAIN_CONFIGS } from '../types';
-import type { ChainConfig, MessageLimitStatus } from '../types';
+import { X, RotateCcw, BarChart } from 'react-feather';
+import type { MessageLimitStatus } from '../types';
 
 interface AISettingsModalV2Props {
   isOpen: boolean;
@@ -99,26 +98,6 @@ const SectionTitle = styled.h3`
   gap: 8px;
 `;
 
-const ChainSelector = styled.select`
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #1e293b;
-  background: white;
-  cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: #06C755;
-    box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.1);
-  }
-`;
-
-const ChainOption = styled.option`
-  padding: 8px;
-`;
 
 const MessageLimitCard = styled.div`
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
@@ -214,19 +193,6 @@ export const AISettingsModalV2: React.FC<AISettingsModalV2Props> = ({
   messageLimitStatus,
   onClearChatHistory
 }) => {
-  const handleChainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChainChange(Number(e.target.value));
-  };
-
-  const getChainIcon = (chainId: number): string => {
-    const chain = CHAIN_CONFIGS.find(c => c.id === chainId);
-    return chain?.icon || '/images/icon-robot.png';
-  };
-
-  const getChainName = (chainId: number): string => {
-    const chain = CHAIN_CONFIGS.find(c => c.id === chainId);
-    return chain?.name || 'Unknown Chain';
-  };
 
   const usagePercentage = (messageLimitStatus.used / messageLimitStatus.total) * 100;
 
@@ -243,30 +209,8 @@ export const AISettingsModalV2: React.FC<AISettingsModalV2Props> = ({
         </ModalHeader>
 
         <ModalBody>
-          {/* Chain Selection */}
-          <Section>
-            <SectionTitle>
-              <Globe size={16} />
-              Blockchain Network
-            </SectionTitle>
-            <ChainSelector
-              value={selectedChain}
-              onChange={handleChainChange}
-            >
-              {CHAIN_CONFIGS.map((chain) => (
-                <ChainOption key={chain.id} value={chain.id}>
-                  {chain.name} ({chain.symbol})
-                </ChainOption>
-              ))}
-            </ChainSelector>
-          </Section>
-
           {/* Message Limit Status */}
-          <Section>
-            <SectionTitle>
-              <BarChart size={16} />
-              Daily Message Limit
-            </SectionTitle>
+          <Section> 
             <MessageLimitCard>
               <MessageLimitHeader>
                 <MessageLimitTitle>Messages Used Today</MessageLimitTitle>
@@ -288,8 +232,7 @@ export const AISettingsModalV2: React.FC<AISettingsModalV2Props> = ({
           </Section>
 
           {/* Actions */}
-          <Section>
-            <SectionTitle>Actions</SectionTitle>
+          <Section> 
             <ActionButton $variant="danger" onClick={onClearChatHistory}>
               <RotateCcw size={16} />
               Clear Chat History

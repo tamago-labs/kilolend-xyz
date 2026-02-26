@@ -4,6 +4,7 @@ import { Send, Settings, MessageSquare, AlertCircle, Clock, User } from 'react-f
 import { MarkdownRenderer } from '@/components/Modal/AIAgentModal/MarkdownRenderer';
 import { MessageLimitUtil } from '../utils/messageLimit';
 import { aiChatServiceV2, TextProcessor } from '@/services/AIChatServiceV2';
+import { CHAIN_CONFIGS } from '../types';
 import type { ChatMessage } from '../types';
 
 interface ChatActiveStateV2Props {
@@ -14,6 +15,7 @@ interface ChatActiveStateV2Props {
   onMessagesUpdate: (messages: ChatMessage[]) => void;
   isLoading: boolean;
   selectedChain: number;
+  onChainChange: (chainId: number) => void;
   userAddress: string;
   messageLimitStatus: {
     used: number;
@@ -39,6 +41,15 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   border-radius: 16px 16px 0 0;
+`;
+
+const ChainSelectorRow = styled.div`
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const AgentInfo = styled.div`
@@ -79,6 +90,39 @@ const StatusDot = styled.div`
   width: 6px;
   height: 6px;
   background: #06C755;
+  border-radius: 50%;
+`;
+
+const ChainSelector = styled.div`
+  display: flex;
+  gap: 6px;
+  align-items: center;
+`;
+
+const ChainButton = styled.button<{ $isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid ${props => props.$isActive ? '#06C755' : '#e2e8f0'};
+  background: ${props => props.$isActive ? '#06C755' : 'white'};
+  color: ${props => props.$isActive ? 'white' : '#64748b'};
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${props => props.$isActive ? '#059212' : '#f8fafc'};
+    border-color: ${props => props.$isActive ? '#059212' : '#cbd5e1'};
+    color: ${props => props.$isActive ? 'white' : '#1e293b'};
+  }
+`;
+
+const ChainIcon = styled.img`
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
 `;
 
@@ -310,6 +354,7 @@ export const ChatActiveStateV2: React.FC<ChatActiveStateV2Props> = ({
   onMessagesUpdate,
   isLoading,
   selectedChain,
+  onChainChange,
   userAddress,
   messageLimitStatus
 }) => {
@@ -467,12 +512,34 @@ export const ChatActiveStateV2: React.FC<ChatActiveStateV2Props> = ({
             </AgentStatus>
           </AgentDetails>
         </AgentInfo>
+        
         <HeaderActions>
           <SettingsButton onClick={onSettings}>
             <Settings size={18} />
           </SettingsButton>
         </HeaderActions>
       </Header>
+
+      <ChainSelectorRow>
+        <ChainSelector>
+          {CHAIN_CONFIGS.map((chain) => (
+            <ChainButton
+              key={chain.id}
+              $isActive={selectedChain === chain.id}
+              onClick={() => onChainChange(chain.id)}
+            >
+              <ChainIcon 
+                src={chain.icon} 
+                alt={chain.name}
+                onError={(e) => {
+                  e.currentTarget.src = '/images/icon-robot.png';
+                }}
+              />
+              {chain.symbol}
+            </ChainButton>
+          ))}
+        </ChainSelector>
+      </ChainSelectorRow>
 
       <MessagesContainer>
         {messages.length === 0 ? (

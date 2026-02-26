@@ -381,6 +381,7 @@ export const DesktopAIChatPanelV2: React.FC<DesktopAIChatPanelV2Props> = ({
             onMessagesUpdate={setMessages}
             isLoading={isMessageLoading}
             selectedChain={selectedChain}
+            onChainChange={handleChainChange}
             userAddress={account || ''}
             messageLimitStatus={messageLimitStatus}
           />
