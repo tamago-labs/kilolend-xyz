@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { aiWalletService, WithdrawResponse, AIWalletStatus } from '@/services/aiWalletService';
 import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
@@ -72,6 +72,11 @@ const LoadingSpinner = styled.div`
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 const LoadingText = styled.p`
@@ -240,47 +245,12 @@ const RefreshSpinner = styled.div`
   border-top: 2px solid #10b981;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-`;
 
-
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
-  
-  @keyframes fadeIn {
-    from { 
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to { 
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes pulse {
-    0% { 
-      background-color: #d1fae5;
-      border-color: #10b981;
-    }
-    50% { 
-      background-color: #ecfdf5;
-      border-color: #059669;
-    }
-    100% { 
-      background-color: #d1fae5;
-      border-color: #10b981;
-    }
-  }
 `;
-if (!document.head.querySelector('style[data-kilolend-animations]')) {
-  style.setAttribute('data-kilolend-animations', 'true');
-  document.head.appendChild(style);
-}
 
 export const WithdrawContent: React.FC<WithdrawContentProps> = ({ 
   aiWalletData, 
@@ -299,6 +269,7 @@ export const WithdrawContent: React.FC<WithdrawContentProps> = ({
   // Get user address from wallet store
   const { account } = useWalletAccountStore();
   const userAddress = account;
+
 
   // Fetch AI wallet balances
   const { balances: aiBalances, getBalancesByChain, isLoading: isBalancesLoading, refetch } = useAITokenBalancesV2(
@@ -471,8 +442,7 @@ export const WithdrawContent: React.FC<WithdrawContentProps> = ({
           border: '4px solid #e2e8f0',
           borderTop: '4px solid #06C755',
           borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
+        }} className="loading-spinner" />
         <p style={{ color: '#64748b', fontSize: '16px' }}>Loading AI wallet balances...</p>
       </div>
     );

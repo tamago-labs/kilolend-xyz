@@ -1,3 +1,5 @@
+"use client"
+
 import { DesktopLeaderboard } from '@/components/Desktop/pages/Leaderboard/DesktopLeaderboardPage';
 
 export default function LeaderboardPage() {
