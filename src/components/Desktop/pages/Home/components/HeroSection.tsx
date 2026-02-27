@@ -44,7 +44,7 @@ const HeroSubtitle = styled.p`
   color: #64748b;
   margin-bottom: 40px;
   line-height: 1.6;
-  max-width: 500px;
+  max-width: 600px;
 `;
 
 const CTAContainer = styled.div`
@@ -382,7 +382,7 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
         <HeroContent>
           <HeroTitle>DeFi Built for AI Agents — Simple for You</HeroTitle>
           <HeroSubtitle>
-           KiloLend is an agent-native DeFi platform for lending, borrowing, and swaps. Built for agents, simple for humans.
+           KiloLend is the capital layer for AI agents — enabling autonomous lending, borrowing, and on-chain execution.
           </HeroSubtitle>
 
           <CTAContainer>
