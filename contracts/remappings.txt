@@ -1,3 +1,4 @@
 forge-std/=lib/forge-std/src/
 @kaiachain/=lib/kaia-contracts/
 @pythnetwork/pyth-sdk-solidity/=lib/pyth-contracts
+@openzeppelin/=lib/openzeppelin-contracts/

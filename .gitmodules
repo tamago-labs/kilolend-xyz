@@ -4,3 +4,6 @@
 [submodule "contracts/lib/kaia-contracts"]
 	path = contracts/lib/kaia-contracts
 	url = https://github.com/kaiachain/kaia-contracts
+[submodule "contracts/lib/openzeppelin-contracts"]
+	path = contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
