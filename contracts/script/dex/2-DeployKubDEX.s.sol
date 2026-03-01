@@ -16,7 +16,7 @@ import "../../src/dex/oracle/PoolOracle.sol";
  * @title DeployKubDEX
  * @notice Deploy KUB-specific DEX (Factory, Router, Libraries) for Kubster ecosystem
  * @dev Usage: 
- *   forge script script/kub/2-DeployKubDEX.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
+ *   forge script script/dex/2-DeployKubDEX.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
@@ -61,8 +61,8 @@ contract DeployKubDEX is Script {
         console.log("Deployer address:", deployer);
         console.log("Block number:", block.number);
         
-        address kubsToken = vm.envAddress("KUBS_TOKEN_ADDRESS");
-        address wkub = _getWkubAddress();
+        address kubsToken = 0xAAC3ad3b84FbC8A8F3BEe534e2645b0698937280;
+        address wkub = 0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5;
         
         console.log("KUBS Token:", kubsToken);
         console.log("WKUB:", wkub);
@@ -139,7 +139,7 @@ contract DeployKubDEX is Script {
         
         _logDeploymentResults(deployment);
         _verifyDeployment(deployment, deployerPrivateKey);
-        _exportDeployment(deployment);
+        // _exportDeployment(deployment);
         
         console.log("===========================================");
         console.log("KUB DEX deployment complete!");
@@ -153,14 +153,7 @@ contract DeployKubDEX is Script {
         return _parsePrivateKey(privateKeyString);
     }
 
-    function _getWkubAddress() internal view returns (address) {
-        try vm.envAddress("WKUB_ADDRESS") returns (address wkub) {
-            return wkub;
-        } catch {
-            revert("WKUB_ADDRESS environment variable must be set");
-        }
-    }
-    
+
     function _logDeploymentResults(DEXDeployment memory deployment) internal view {
         console.log("\n===========================================");
         console.log("KUB DEX Deployment Results");
@@ -226,33 +219,6 @@ contract DeployKubDEX is Script {
         
         console.log("All verifications passed!");
     }
-    
-    function _exportDeployment(DEXDeployment memory d) internal {
-    string memory part1 = string(abi.encodePacked(
-        '{"factory":"', vm.toString(d.factory), '",',
-        '"router":"', vm.toString(d.router), '",'
-    ));
-
-    string memory part2 = string(abi.encodePacked(
-        '"positionManager":"', vm.toString(d.positionManager), '",',
-        '"poolOracle":"', vm.toString(d.poolOracle), '",'
-    ));
-
-    string memory part3 = string(abi.encodePacked(
-        '"quoter":"', vm.toString(d.quoter), '",',
-        '"ticksFeesReader":"', vm.toString(d.ticksFeesReader), '",'
-    ));
-
-    string memory part4 = string(abi.encodePacked(
-        '"descriptor":"', vm.toString(d.descriptor), '",',
-        '"kubsToken":"', vm.toString(d.kubsToken), '",',
-        '"wkub":"', vm.toString(d.wkub), '"}'
-    ));
-
-    string memory json = string(abi.encodePacked(part1, part2, part3, part4));
-
-    vm.writeFile("./kub_dex_deployment.json", json);
-}
     
     function _parsePrivateKey(string memory privateKeyString) internal pure returns (uint256) {
         if (bytes(privateKeyString)[0] == '0' && bytes(privateKeyString)[1] == 'x') {

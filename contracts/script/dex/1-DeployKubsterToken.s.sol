@@ -8,7 +8,7 @@ import "../../src/tokens/AIAgentToken.sol";
  * @title DeployKubsterToken
  * @notice Deploy Kubster Token (KUBS) using the generic AIAgentToken contract
  * @dev Usage: 
- *   forge script script/kub/1-DeployKubsterToken.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
+ *   forge script script/dex/1-DeployKubsterToken.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
