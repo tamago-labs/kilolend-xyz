@@ -13,46 +13,46 @@ import "../../src/dex/libraries/QtyDeltaMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title SetupKubsterPool
- * @notice Create and initialize KUBS/WKUB pool with liquidity
+ * @title SetupKlawsterPool
+ * @notice Create and initialize KLAW/WKUB pool with liquidity
  * @dev Usage: 
- *   forge script script/dex/3-SetupKubsterPool.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
+ *   forge script script/dex/3-SetupKlawsterPool.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
- *   - KUBS_TOKEN_ADDRESS: Address of deployed KUBS token
+ *   - KLAW_TOKEN_ADDRESS: Address of deployed KLAW token
  *   - WKUB_ADDRESS: Wrapped KUB (WKUB) address on KUB
  *   - DEX_FACTORY_ADDRESS: Address of deployed DEX factory
  *   - DEX_ROUTER_ADDRESS: Address of deployed DEX router
  *   - POSITION_MANAGER_ADDRESS: Address of deployed position manager
  */
-contract SetupKubsterPool is Script {
+contract SetupKlawsterPool is Script {
     
     // Pool Configuration
-    uint256 public constant KUBS_LIQUIDITY = 1_000_000 * 10**18;
+    uint256 public constant KLAW_LIQUIDITY = 1_000_000 * 10**18;
     uint256 public constant WKUB_LIQUIDITY_INIT = 10 * 10**18; // For pool initialization
     uint256 public constant WKUB_LIQUIDITY_POS = 1 * 10**18; // For position creation
-    uint256 public constant KUBS_LIQUIDITY_POS = 100_000 * 10**18; // Proportional KUBS for position (1:100 ratio)
+    uint256 public constant KLAW_LIQUIDITY_POS = 100_000 * 10**18; // Proportional KLAW for position (1:100 ratio)
     uint24 public constant FEE_TIER = 10000; // 1% fee tier
     
-    // Tick configuration for initial price (1 WKUB = 100,000 KUBS)
+    // Tick configuration for initial price (1 WKUB = 100,000 KLAW)
     int24 public constant TICK_SPACING = 200; // For 1% fee tier 
-    int24 public constant INITIAL_TICK = -115200; // Rounded to nearest multiple of tick spacing
+    int24 public constant INITIAL_TICK = 115200; // Rounded to nearest multiple of tick spacing
     
     struct PoolSetup {
         address pool;
-        address kubsToken;
+        address klawToken;
         address wkub;
         address factory;
         address router;
         address positionManager;
         uint256 tokenId;
-        uint256 kubsLiquidity;
+        uint256 klawLiquidity;
         uint256 wkubLiquidity;
     }
     
     struct PoolAddresses {
-        address kubsToken;
+        address klawToken;
         address wkub;
         address factory;
         address router;
@@ -100,7 +100,7 @@ contract SetupKubsterPool is Script {
     }
     
     /**
-     * @notice Setup KUBS/WKUB pool with initial liquidity
+     * @notice Setup KLAW/WKUB pool with initial liquidity
      * @return setup Pool setup details
      */
     function deploy() public returns (PoolSetup memory) {
@@ -118,7 +118,7 @@ contract SetupKubsterPool is Script {
         // Create pool
         KiloDexPool pool = _createPool(
             KiloDexFactory(addresses.factory),
-            addresses.kubsToken,
+            addresses.klawToken,
             addresses.wkub,
             FEE_TIER,
             INITIAL_TICK
@@ -126,20 +126,20 @@ contract SetupKubsterPool is Script {
         
         // Approve tokens for position manager (use position amounts, not full amounts)
         _approveTokens(
-            addresses.kubsToken,
+            addresses.klawToken,
             addresses.wkub,
             addresses.positionManager,
-            KUBS_LIQUIDITY_POS,
+            KLAW_LIQUIDITY_POS,
             WKUB_LIQUIDITY_POS
         );
         
         // Create liquidity position and capture tokenId
         LiquidityResult memory liquidityResult = _createLiquidityPosition(
             addresses.positionManager,
-            addresses.kubsToken,
+            addresses.klawToken,
             addresses.wkub,
             FEE_TIER,
-            KUBS_LIQUIDITY_POS,
+            KLAW_LIQUIDITY_POS,
             WKUB_LIQUIDITY_POS,
             deployer
         );
@@ -149,13 +149,13 @@ contract SetupKubsterPool is Script {
         // Create setup result with actual tokenId
         PoolSetup memory poolSetup = PoolSetup({
             pool: address(pool),
-            kubsToken: addresses.kubsToken,
+            klawToken: addresses.klawToken,
             wkub: addresses.wkub,
             factory: addresses.factory,
             router: addresses.router,
             positionManager: addresses.positionManager,
             tokenId: liquidityResult.tokenId, // Actual tokenId from mint operation
-            kubsLiquidity: KUBS_LIQUIDITY,
+            klawLiquidity: KLAW_LIQUIDITY,
             wkubLiquidity: WKUB_LIQUIDITY_INIT
         });
         
@@ -175,14 +175,14 @@ contract SetupKubsterPool is Script {
     ) internal returns (KiloDexPool) {
         console.log("Creating pool...");
         
-        // Determine token order - WKUB (0x67eB...) should be token0, KUBS (0xAAC3...) should be token1
+        // Determine token order - WKUB (0x67eB...) should be token0, KLAW (0xa83a...) should be token1
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         
         console.log("Token order verification:");
         console.log("  Token0:", token0);
         console.log("  Token1:", token1);
         console.log("  WKUB token:", tokenB);
-        console.log("  KUBS token:", tokenA);
+        console.log("  KLAW token:", tokenA);
         
         // Create pool
         address poolAddress = factory.createPool(token0, token1, fee);
@@ -190,7 +190,7 @@ contract SetupKubsterPool is Script {
         
         console.log("Pool created:", poolAddress);
         
-        // Calculate sqrtPriceX96 for our desired 1M:10 ratio (1 WKUB = 100,000 KUBS)
+        // Calculate sqrtPriceX96 for our desired 1M:10 ratio (1 WKUB = 100,000 KLAW)
         uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(tick);
         
         // For exact 1M:10 ratio initialization, we need to transfer exact amounts
@@ -198,15 +198,15 @@ contract SetupKubsterPool is Script {
         uint256 initAmount0;
         uint256 initAmount1;
         
-        // WKUB should be token0 (0x67eB...), KUBS should be token1 (0xAAC3...)
-        // Since WKUB < KUBS in address comparison, token0 will be WKUB
+        // WKUB should be token0 (0x67eB...), KLAW should be token1 (0xa83a...)
+        // Since WKUB < KLAW in address comparison, token0 will be WKUB
         if (token0 == tokenB) {
-            // token0 is WKUB, token1 is KUBS (correct order)
+            // token0 is WKUB, token1 is KLAW (correct order)
             initAmount0 = WKUB_LIQUIDITY_INIT; // 10 WKUB for initialization
-            initAmount1 = KUBS_LIQUIDITY; // 1M KUBS for initialization
+            initAmount1 = KLAW_LIQUIDITY; // 1M KLAW for initialization
         } else {
-            // token0 is KUBS, token1 is WKUB (incorrect order, but handle anyway)
-            initAmount0 = KUBS_LIQUIDITY; // 1M KUBS
+            // token0 is KLAW, token1 is WKUB (incorrect order, but handle anyway)
+            initAmount0 = KLAW_LIQUIDITY; // 1M KLAW
             initAmount1 = WKUB_LIQUIDITY_INIT; // 10 WKUB
         }
         
@@ -231,20 +231,20 @@ contract SetupKubsterPool is Script {
     }
     
     function _approveTokens(
-        address kubsToken,
+        address klawToken,
         address wkub,
         address positionManager,
-        uint256 kubsAmount,
+        uint256 klawAmount,
         uint256 wkubAmount
     ) internal {
         console.log("Approving and transferring tokens...");
         
-        AIAgentToken kubs = AIAgentToken(kubsToken);
+        AIAgentToken klaw = AIAgentToken(klawToken);
         IERC20 wkubToken = IERC20(wkub);
         
-        // Approve KUBS for position creation
-        kubs.approve(positionManager, kubsAmount);
-        console.log("KUBS approved for position manager:", kubsAmount / 1e18);
+        // Approve KLAW for position creation
+        klaw.approve(positionManager, klawAmount);
+        console.log("KLAW approved for position manager:", klawAmount / 1e18);
         
         // Approve WKUB for position creation (only 1 WKUB, not 10)
         wkubToken.approve(positionManager, wkubAmount);
@@ -403,7 +403,7 @@ contract SetupKubsterPool is Script {
         console.log("Pool Setup Results");
         console.log("===========================================");
         console.log("Pool Address:", poolSetup.pool);
-        console.log("KUBS Token:", poolSetup.kubsToken);
+        console.log("KLAW Token:", poolSetup.klawToken);
         console.log("WKUB Token:", poolSetup.wkub);
         console.log("Factory:", poolSetup.factory);
         console.log("Router:", poolSetup.router);
@@ -418,9 +418,9 @@ contract SetupKubsterPool is Script {
         console.log("  SqrtPriceX96:", sqrtPriceX96);
         
         console.log("\nLiquidity Information:");
-        console.log("  Pool Initialization - KUBS:", poolSetup.kubsLiquidity / 1e18);
+        console.log("  Pool Initialization - KLAW:", poolSetup.klawLiquidity / 1e18);
         console.log("  Pool Initialization - WKUB:", poolSetup.wkubLiquidity / 1e18);
-        console.log("  Position Creation - KUBS:", KUBS_LIQUIDITY_POS / 1e18);
+        console.log("  Position Creation - KLAW:", KLAW_LIQUIDITY_POS / 1e18);
         console.log("  Position Creation - WKUB:", WKUB_LIQUIDITY_POS / 1e18);
         console.log("  Total WKUB Used:", (poolSetup.wkubLiquidity + WKUB_LIQUIDITY_POS) / 1e18);
         
@@ -469,7 +469,7 @@ contract SetupKubsterPool is Script {
     
     function _logSetupHeader() internal view {
         console.log("===========================================");
-        console.log("Setup KUBS/WKUB Pool");
+        console.log("Setup KLAW/WKUB Pool");
         console.log("===========================================");
         console.log("Chain ID:", block.chainid);
         require(block.chainid == 96, "Must deploy to KUB Chain (chain ID 96)");
@@ -483,7 +483,7 @@ contract SetupKubsterPool is Script {
     
     function _getPoolAddresses() internal pure returns (PoolAddresses memory) {
         return PoolAddresses({
-            kubsToken: 0xAAC3ad3b84FbC8A8F3BEe534e2645b0698937280,
+            klawToken: 0xa83a9e9B63D48551F56179a92A2Ccf7984B167ff,
             wkub: 0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5,
             factory: 0x4443d912199047c5450c9847a96180AE3204949F,
             router: 0x5570c281c8F51905Edb78AC65E11b3c236F68F7b,
@@ -492,7 +492,7 @@ contract SetupKubsterPool is Script {
     }
     
     function _logAddresses(PoolAddresses memory addresses) internal pure {
-        console.log("KUBS Token:", addresses.kubsToken);
+        console.log("KLAW Token:", addresses.klawToken);
         console.log("WKUB Token:", addresses.wkub);
         console.log("Factory:", addresses.factory);
         console.log("Router:", addresses.router);
@@ -502,9 +502,9 @@ contract SetupKubsterPool is Script {
     function _logPoolConfig() internal pure {
         console.log("===========================================");
         console.log("Pool Configuration:");
-        console.log("  Pool Init - KUBS:", KUBS_LIQUIDITY / 1e18);
+        console.log("  Pool Init - KLAW:", KLAW_LIQUIDITY / 1e18);
         console.log("  Pool Init - WKUB:", WKUB_LIQUIDITY_INIT / 1e18);
-        console.log("  Position - KUBS:", KUBS_LIQUIDITY_POS / 1e18);
+        console.log("  Position - KLAW:", KLAW_LIQUIDITY_POS / 1e18);
         console.log("  Position - WKUB:", WKUB_LIQUIDITY_POS / 1e18);
         console.log("  Total WKUB Needed:", (WKUB_LIQUIDITY_INIT + WKUB_LIQUIDITY_POS) / 1e18);
         console.log("  Fee Tier:", FEE_TIER, "basis points");
@@ -514,7 +514,7 @@ contract SetupKubsterPool is Script {
     
     function _logSetupComplete() internal pure {
         console.log("===========================================");
-        console.log("KUBS/WKUB pool setup complete!");
+        console.log("KLAW/WKUB pool setup complete!");
         console.log("===========================================");
     }
 }

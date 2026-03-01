@@ -61,7 +61,7 @@ contract DeployKubDEX is Script {
         console.log("Deployer address:", deployer);
         console.log("Block number:", block.number);
         
-        address kubsToken = 0xAAC3ad3b84FbC8A8F3BEe534e2645b0698937280;
+        address kubsToken = 0xAAC3ad3b84FbC8A8F3BEe534e2645b0698937280; // NO NEED HERE
         address wkub = 0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5;
         
         console.log("KUBS Token:", kubsToken);

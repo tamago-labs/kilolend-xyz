@@ -32,6 +32,15 @@ KiloLend is deployed on multiple mainnet networks, with each deployment tailored
 - **cKUSDT (Stablecoin):** [0x5E9aF11F9a09174B87550B4Bfb4EdE65De933085](https://www.kubscan.com/address/0x5E9aF11F9a09174B87550B4Bfb4EdE65De933085)  
 - **cKUB (Volatile):** [0x0cA8DaD1e517a9BB760Ba0C27051C4C3A036eA75](https://www.kubscan.com/address/0x0cA8DaD1e517a9BB760Ba0C27051C4C3A036eA75)
 
+#### DEX Contracts
+- **PoolOracle:** [0x9C8fAA8367D4e669Ee19fb3BCc95EFf374912a6f](https://www.kubscan.com/address/0x9C8fAA8367D4e669Ee19fb3BCc95EFf374912a6f)  
+- **Factory:** [0x4443d912199047c5450c9847a96180AE3204949F](https://www.kubscan.com/address/0x4443d912199047c5450c9847a96180AE3204949F)  
+- **Descriptor:** [0xAe71EeF3d2055fac295Fe8B7A6Fb23C22A09d897](https://www.kubscan.com/address/0xAe71EeF3d2055fac295Fe8B7A6Fb23C22A09d897)  
+- **AntiSnipAttackPositionManager:** [0x9B0c19781817Dd086946BafC6d58798B8976DC05](https://www.kubscan.com/address/0x9B0c19781817Dd086946BafC6d58798B8976DC05)  
+- **Router:** [0x5570c281c8F51905Edb78AC65E11b3c236F68F7b](https://www.kubscan.com/address/0x5570c281c8F51905Edb78AC65E11b3c236F68F7b)  
+- **QuoterV2:** [0xc2E717DaB7DCaCcf1A463BB6ba66903BC41a7E1e](https://www.kubscan.com/address/0xc2E717DaB7DCaCcf1A463BB6ba66903BC41a7E1e)  
+- **TicksFeesReader:** [0x1a4032CB5a03641107bC0f945D378A214401057f](https://www.kubscan.com/address/0x1a4032CB5a03641107bC0f945D378A214401057f)  
+
 ---
 
 ### KAIA Mainnet
@@ -53,5 +62,3 @@ KiloLend is deployed on multiple mainnet networks, with each deployment tailored
 ## Learn More About dapp-portal-sdk
 
 - [dapp-portal-sdk guide](https://docs.dappportal.io/mini-dapp/mini-dapp-sdk) Get more information about dapp-portal-sdk!
-
-

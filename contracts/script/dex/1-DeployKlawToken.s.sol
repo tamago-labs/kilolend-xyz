@@ -5,20 +5,20 @@ import {Script, console} from "forge-std/Script.sol";
 import "../../src/tokens/AIAgentToken.sol";
 
 /**
- * @title DeployKubsterToken
- * @notice Deploy Kubster Token (KUBS) using the generic AIAgentToken contract
+ * @title DeployKlawsterToken
+ * @notice Deploy Klawster Token (KLAW) using the generic AIAgentToken contract
  * @dev Usage: 
- *   forge script script/dex/1-DeployKubsterToken.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
+ *   forge script script/dex/1-DeployKlawsterToken.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
  *   - AI_AGENT_ADDRESS: Initial AI agent address (optional)
  */
-contract DeployKubsterToken is Script {
+contract DeployKlawsterToken is Script {
     
-    // Kubster Token Configuration
-    string public constant TOKEN_NAME = "Kubster";
-    string public constant TOKEN_SYMBOL = "KUBS";
+    // Klawster Token Configuration
+    string public constant TOKEN_NAME = "Klawster";
+    string public constant TOKEN_SYMBOL = "KLAW";
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
     
     struct TokenDeployment {
@@ -33,12 +33,12 @@ contract DeployKubsterToken is Script {
     }
     
     /**
-     * @notice Deploy Kubster token with configuration
+     * @notice Deploy Klawster token with configuration
      * @return deployment Token deployment details
      */
     function deploy() public returns (TokenDeployment memory) {
         console.log("===========================================");
-        console.log("Deploy Kubster Token (KUBS)");
+        console.log("Deploy Klawster Token (KLAW)");
         console.log("===========================================");
         console.log("Chain ID:", block.chainid);
         require(block.chainid == 96, "Must deploy to KUB Chain (chain ID 96)");
@@ -70,7 +70,7 @@ contract DeployKubsterToken is Script {
         vm.startBroadcast(deployerPrivateKey);
         
         // Deploy the token
-        AIAgentToken kubsterToken = new AIAgentToken(
+        AIAgentToken klawsterToken = new AIAgentToken(
             TOKEN_NAME,
             TOKEN_SYMBOL,
             TOTAL_SUPPLY,
@@ -82,7 +82,7 @@ contract DeployKubsterToken is Script {
         
         // Create deployment result
         TokenDeployment memory deployment = TokenDeployment({
-            tokenAddress: address(kubsterToken),
+            tokenAddress: address(klawsterToken),
             creator: deployer,
             aiAgent: aiAgent,
             totalSupply: TOTAL_SUPPLY
@@ -92,7 +92,7 @@ contract DeployKubsterToken is Script {
         _verifyDeployment(deployment);
         
         console.log("===========================================");
-        console.log("Kubster Token deployment complete!");
+        console.log("Klawster Token deployment complete!");
         console.log("===========================================");
         
         return deployment;
@@ -108,7 +108,7 @@ contract DeployKubsterToken is Script {
     
     function _logDeploymentResults(TokenDeployment memory deployment) internal view {
         console.log("\n===========================================");
-        console.log("Kubster Token Deployment Results");
+        console.log("Klawster Token Deployment Results");
         console.log("===========================================");
         console.log("Token Address:", deployment.tokenAddress);
         console.log("Creator:", deployment.creator);
