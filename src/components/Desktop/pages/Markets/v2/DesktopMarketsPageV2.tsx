@@ -94,7 +94,7 @@ export const DesktopMarketsV2 = () => {
           selectedChain={selectedChain}
         />
 
-        <KiloPointsBanner />
+        {/* <KiloPointsBanner /> */}
       </MainContent>
     </MarketsContainer>
   );

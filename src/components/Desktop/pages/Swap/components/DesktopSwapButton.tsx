@@ -52,13 +52,19 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+import { useAllowance } from '@/hooks/useAllowance';
+import { KUB_DEX_CONTRACTS } from '@/hooks/useDEXQuote';
+
 interface DesktopSwapButtonProps {
   amount: string;
   quote: any;
   isLoading: boolean;
   isConnected: boolean;
   isSupportedChain: boolean;
+  fromToken: string;
+  toToken: string;
   onSwap: () => void;
+  onApprove: () => void;
 }
 
 export const DesktopSwapButton = ({
@@ -67,11 +73,21 @@ export const DesktopSwapButton = ({
   isLoading,
   isConnected,
   isSupportedChain,
-  onSwap
+  fromToken,
+  toToken,
+  onSwap,
+  onApprove
 }: DesktopSwapButtonProps) => {
+  
+  // Check allowance for the input token
+  const { allowance, isSufficient, isLoading: isAllowanceLoading } = useAllowance(
+    fromToken,
+    KUB_DEX_CONTRACTS.Router,
+    amount
+  );
 
   const getButtonText = () => {
-    if (isLoading) {
+    if (isLoading || isAllowanceLoading) {
       return 'Processing...';
     }
     
@@ -91,7 +107,20 @@ export const DesktopSwapButton = ({
       return 'Fetching Quote...';
     }
     
+    // Check if approval is needed (skip for native KUB)
+    if (!isSufficient && fromToken !== KUB_DEX_CONTRACTS.KUB) {
+      return 'Approve';
+    }
+    
     return 'Swap';
+  };
+
+  const handleClick = () => {
+    if (!isSufficient && fromToken !== KUB_DEX_CONTRACTS.KUB) {
+      onApprove();
+    } else {
+      onSwap();
+    }
   };
 
   const isDisabled = !isConnected || 
@@ -99,15 +128,22 @@ export const DesktopSwapButton = ({
                      !amount || 
                      parseFloat(amount) <= 0 || 
                      !quote || 
-                     isLoading;
+                     isLoading ||
+                     isAllowanceLoading;
+
+  // Different styling for approve vs swap
+  const buttonStyle = !isSufficient && amount && parseFloat(amount) > 0 && quote && fromToken !== KUB_DEX_CONTRACTS.KUB ? {
+    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+  } : {};
 
   return (
     <SwapButton
-      onClick={onSwap}
+      onClick={handleClick}
       disabled={isDisabled}
+      style={buttonStyle}
     >
       <ButtonContent>
-        {isLoading && <LoadingSpinner />}
+        {(isLoading || isAllowanceLoading) && <LoadingSpinner />}
         {getButtonText()}
       </ButtonContent>
     </SwapButton>

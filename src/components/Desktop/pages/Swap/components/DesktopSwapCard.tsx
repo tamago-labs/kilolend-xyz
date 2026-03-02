@@ -1,10 +1,12 @@
 import styled from 'styled-components';
+import { ArrowUpDown } from 'lucide-react';
 import { DesktopSwapInput } from './DesktopSwapInput';
 import { DesktopSwapQuote } from './DesktopSwapQuote';
-import { DesktopSwapButton } from './DesktopSwapButton';
+import { DesktopSwapButton } from './DesktopSwapButton'; 
 import { KUB_DEX_CONTRACTS } from '@/hooks/useDEXQuote';
 import { KUB_TOKENS } from '@/config/tokens';
 import useTokenBalance from '@/hooks/useTokenBalance';
+import { useEffect } from 'react';
 
 const SwapCard = styled.div`
   background: white;
@@ -54,11 +56,17 @@ interface DesktopSwapCardProps {
   amount: string;
   quote: any;
   isLoading: boolean;
+  isTyping?: boolean;
   isConnected: boolean;
+  tick: number;
   isSupportedChain: boolean;
   onAmountChange: (amount: string) => void;
   onSwap: () => void;
   onSwapTokens: () => void;
+  onApprove?: () => void;
+  availableTokens?: any[];
+  onFromTokenSelect?: (token: any) => void;
+  onToTokenSelect?: (token: any) => void;
 }
 
 export const DesktopSwapCard = ({
@@ -67,18 +75,32 @@ export const DesktopSwapCard = ({
   amount,
   quote,
   isLoading,
+  tick,
+  isTyping = false,
   isConnected,
   isSupportedChain,
   onAmountChange,
   onSwap,
-  onSwapTokens
+  onSwapTokens,
+  onApprove,
+  availableTokens = [],
+  onFromTokenSelect,
+  onToTokenSelect
 }: DesktopSwapCardProps) => {
-  
+
   // Get token balances
-  const { balance: fromTokenBalance } = useTokenBalance(fromToken);
-  const { balance: toTokenBalance } = useTokenBalance(toToken);
+  const { balance: fromTokenBalance, refetch: fromTokenRefetch } = useTokenBalance(fromToken);
+  const { balance: toTokenBalance, refetch: toTokenRefetch } = useTokenBalance(toToken);
+
+  useEffect(() => {
+    if (tick !== 1) {
+      fromTokenRefetch()
+      toTokenRefetch()
+    } 
+  }, [tick])
 
   const getTokenInfo = (address: string) => {
+    if (address === KUB_DEX_CONTRACTS.KUB) return KUB_TOKENS.KUB;
     if (address === KUB_DEX_CONTRACTS.KLAW) return KUB_TOKENS.KLAW;
     if (address === KUB_DEX_CONTRACTS.KKUB) return KUB_TOKENS.KKUB;
     return null;
@@ -97,15 +119,18 @@ export const DesktopSwapCard = ({
           balance={fromTokenBalance}
           onAmountChange={onAmountChange}
           disabled={!isConnected || !isSupportedChain || isLoading}
+          showTokenSelector={true}
+          availableTokens={availableTokens}
+          onTokenSelect={onFromTokenSelect}
         />
       </SwapSection>
 
       <SwapIconContainer>
-        <SwapIconButton 
+        <SwapIconButton
           onClick={onSwapTokens}
           disabled={!isConnected || !isSupportedChain || isLoading}
         >
-          ⇅
+          <ArrowUpDown size={20} />
         </SwapIconButton>
       </SwapIconContainer>
 
@@ -113,20 +138,30 @@ export const DesktopSwapCard = ({
         <DesktopSwapInput
           label="To"
           token={toTokenInfo}
-          amount={quote?.amountOut || ''}
+          amount={isTyping ? '' : (quote?.amountOut || '')}
           balance={toTokenBalance}
           readOnly
           disabled={!isConnected || !isSupportedChain}
+          placeholder={isTyping ? 'Calculating...' : '0.00'}
+          showTokenSelector={true}
+          availableTokens={availableTokens}
+          onTokenSelect={onToTokenSelect}
         />
       </SwapSection>
 
       {quote && (
-        <DesktopSwapQuote 
+        <DesktopSwapQuote
           quote={quote}
           fromTokenSymbol={fromTokenInfo?.symbol || ''}
           toTokenSymbol={toTokenInfo?.symbol || ''}
         />
       )}
+
+      {/* <DesktopSlippageWarning
+        slippage={quote?.slippage || 5}
+        isHighSlippage={(quote?.slippage || 5) >= 5}
+        isMemeMode={toTokenInfo?.symbol === 'KLAW'}
+      /> */}
 
       <DesktopSwapButton
         amount={amount}
@@ -134,7 +169,10 @@ export const DesktopSwapCard = ({
         isLoading={isLoading}
         isConnected={isConnected}
         isSupportedChain={isSupportedChain}
+        fromToken={fromToken}
+        toToken={toToken}
         onSwap={onSwap}
+        onApprove={onApprove || (() => { })}
       />
     </SwapCard>
   );

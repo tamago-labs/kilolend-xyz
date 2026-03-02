@@ -3,6 +3,7 @@ import { useConnection, useChainId } from 'wagmi';
 import { kubChain } from '@/wagmi_config';
 import { formatUnits } from 'viem';
 import { createPublicClient, http } from 'viem';
+import { KUB_DEX_CONTRACTS } from './useDEXQuote';
 
 // Simple ERC20 ABI for balance
 const erc20Abi = [
@@ -39,14 +40,25 @@ export const useTokenBalance = (tokenAddress?: string) => {
         transport: http(),
       });
 
-      const balanceRaw = await publicClient.readContract({
-        address: tokenAddress as `0x${string}`,
-        abi: erc20Abi,
-        functionName: 'balanceOf',
-        args: [address as `0x${string}`],
-      });
+      let balanceRaw: bigint;
 
-      const formattedBalance = formatUnits(balanceRaw as bigint, 18);
+      // Check if it's native KUB
+      if (tokenAddress === KUB_DEX_CONTRACTS.KUB) {
+        // Get native KUB balance
+        balanceRaw = await publicClient.getBalance({
+          address: address as `0x${string}`,
+        });
+      } else {
+        // Get ERC20 token balance
+        balanceRaw = await publicClient.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        });
+      }
+
+      const formattedBalance = formatUnits(balanceRaw, 18);
       setBalance(formattedBalance);
     } catch (err: any) {
       console.error('Error fetching balance:', err);

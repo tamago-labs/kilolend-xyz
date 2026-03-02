@@ -39,12 +39,46 @@ const quoterV2Abi = [
   }
 ] as const;
 
+// WETH9-style wrapper ABI for KUB
+const wrapperAbi = [
+  {
+    inputs: [{ name: 'amount', type: 'uint256' }],
+    name: 'deposit',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'shares', type: 'uint256' }],
+    name: 'withdraw',
+    outputs: [{ name: 'amount', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'wrap',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'amount', type: 'uint256' }],
+    name: 'unwrap',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+] as const;
+
 // KUB DEX Contract Addresses
 export const KUB_DEX_CONTRACTS = {
   QuoterV2: '0xc2E717DaB7DCaCcf1A463BB6ba66903BC41a7E1e' as const,
   Router: '0x5570c281c8F51905Edb78AC65E11b3c236F68F7b' as const,
   KLAW: '0xa83a9e9B63D48551F56179a92A2Ccf7984B167ff' as const,
   KKUB: '0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5' as const,
+  // Native KUB address (zero address for native token)
+  KUB: '0x0000000000000000000000000000000000000000' as const,
 } as const;
 
 export interface QuoteParams {
@@ -78,11 +112,29 @@ export const useDEXQuote = () => {
       throw new Error('Wallet not connected or not on KUB chain');
     }
 
-    // Validate tokens - only support KLAW <> KKUB pair
-    const supportedTokens = [KUB_DEX_CONTRACTS.KLAW, KUB_DEX_CONTRACTS.KKUB];
+    // Convert native KUB to KKUB for QuoterV2 (QuoterV2 doesn't handle native tokens)
+    const tokenInForQuote = params.tokenIn === KUB_DEX_CONTRACTS.KUB ? KUB_DEX_CONTRACTS.KKUB : params.tokenIn;
+    const tokenOutForQuote = params.tokenOut === KUB_DEX_CONTRACTS.KUB ? KUB_DEX_CONTRACTS.KKUB : params.tokenOut;
+
+    // Validate tokens - support KLAW, KKUB, and native KUB
+    const supportedTokens = [KUB_DEX_CONTRACTS.KLAW, KUB_DEX_CONTRACTS.KKUB, KUB_DEX_CONTRACTS.KUB];
     if (!supportedTokens.includes(params.tokenIn as any) || 
         !supportedTokens.includes(params.tokenOut as any)) {
-      throw new Error('Only KLAW <> KKUB swaps are supported');
+      throw new Error('Only KLAW, KKUB, and KUB swaps are supported');
+    }
+
+    // For KUB ↔ KKUB (wrap/unwrap), return 1:1 quote
+    if ((params.tokenIn === KUB_DEX_CONTRACTS.KUB && params.tokenOut === KUB_DEX_CONTRACTS.KKUB) ||
+        (params.tokenIn === KUB_DEX_CONTRACTS.KKUB && params.tokenOut === KUB_DEX_CONTRACTS.KUB)) {
+      return {
+        amountOut: params.amountIn,
+        priceImpact: 0,
+        gasEstimate: '50000', // Lower gas for simple wrap/unwrap
+        exchangeRate: '1.0',
+        minimumReceived: params.amountIn, // No slippage for wrap/unwrap
+        isLoading: false,
+        error: undefined
+      };
     }
 
     // Validate amount
@@ -105,14 +157,14 @@ export const useDEXQuote = () => {
       const slippagePercent = params.slippage || 5; // Default 5% slippage
       const feeUnits = 10000; // 1% fee tier
 
-      // Get quote from QuoterV2
+      // Get quote from QuoterV2 (using converted addresses for native KUB)
       const quoteResult = await publicClient.readContract({
         address: KUB_DEX_CONTRACTS.QuoterV2 as `0x${string}`,
         abi: quoterV2Abi,
         functionName: 'quoteExactInputSingle',
         args: [{
-          tokenIn: params.tokenIn as `0x${string}`,
-          tokenOut: params.tokenOut as `0x${string}`,
+          tokenIn: tokenInForQuote as `0x${string}`,
+          tokenOut: tokenOutForQuote as `0x${string}`,
           amountIn: amountInWei,
           feeUnits: feeUnits,
           limitSqrtP: BigInt(0) // No price limit as BigInt

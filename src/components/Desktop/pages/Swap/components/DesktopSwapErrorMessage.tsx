@@ -89,18 +89,18 @@ export const DesktopSwapErrorMessage = ({
   isSupportedChain
 }: DesktopSwapErrorMessageProps) => {
 
-  if (!isConnected) {
-    return (
-      <ErrorContainer>
-        <WalletConnectPrompt>
-          <WalletIcon>🔐</WalletIcon>
-          <ErrorText>
-            Please connect your wallet to start swapping tokens on KUB Chain.
-          </ErrorText>
-        </WalletConnectPrompt>
-      </ErrorContainer>
-    );
-  }
+  // if (!isConnected) {
+  //   return (
+  //     <ErrorContainer>
+  //       <WalletConnectPrompt>
+  //         <WalletIcon>🔐</WalletIcon>
+  //         <ErrorText>
+  //           Please connect your wallet to start swapping tokens on KUB Chain.
+  //         </ErrorText>
+  //       </WalletConnectPrompt>
+  //     </ErrorContainer>
+  //   );
+  // }
 
   if (!isSupportedChain) {
     return (

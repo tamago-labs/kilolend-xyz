@@ -14,7 +14,7 @@ const MarketsTable = styled.div`
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
   padding: 20px 32px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
@@ -25,7 +25,7 @@ const TableHeader = styled.div`
 
 const TableRow = styled.div`
   display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
   padding: 20px 32px;
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.3s;
@@ -94,6 +94,17 @@ const ChainBadge = styled.span`
   color: #475569;
   text-transform: uppercase;
   white-space: nowrap;
+`;
+
+const KiloBonusBadge = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #06C755, #05b648);
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(6, 199, 85, 0.3);
 `;
 
 const AssetSymbol = styled.div`
@@ -182,6 +193,13 @@ const CHAIN_NAMES: Record<string, string> = {
   'kaia': 'KAIA',
   'kub': 'KUB',
   'etherlink': 'Etherlink',
+};
+
+// KILO points distribution rates
+const KILO_DISTRIBUTION = {
+  kaia: 50000,
+  kub: 30000,
+  etherlink: 20000
 };
 
 export const DesktopMarketTableV2 = ({
@@ -273,6 +291,37 @@ export const DesktopMarketTableV2 = ({
     return chainNameMap[chainId] || `Chain ${chainId}`;
   };
 
+  // Get KILO bonus for a chain
+  const getKiloBonus = (chainId: number): { text: string; hasBonus: boolean } => {
+    const chainBonusMap: Record<number, string> = {
+      8217: '+250%', // KAIA
+      96: '+150%',   // KUB
+      42793: '', // Etherlink - no bonus
+    };
+    
+    const bonus = chainBonusMap[chainId];
+    if (!bonus || bonus === '') {
+      return { text: '', hasBonus: false };
+    }
+    
+    return { text: bonus, hasBonus: true };
+  };
+
+  // Render KILO bonus badge
+  const renderKiloBonus = (chainId: number) => {
+    const { text, hasBonus } = getKiloBonus(chainId);
+    
+    if (!hasBonus) {
+      return null; // Return empty for Etherlink
+    }
+    
+    return (
+      <KiloBonusBadge>
+        {text}
+      </KiloBonusBadge>
+    );
+  };
+
   // Handle navigation to market detail page
   const handleMarketClick = (market: any) => {
     const chainName = getChainName(market.chainId).toLowerCase();
@@ -334,6 +383,7 @@ export const DesktopMarketTableV2 = ({
     <MarketsTable className={className}>
       <TableHeader>
         <div>Asset</div>
+        <div>KILO Bonus</div>
         <div>Total Supply</div>
         <div>Supply APY</div>
         <div>Total Borrow</div>
@@ -362,6 +412,10 @@ export const DesktopMarketTableV2 = ({
                 <AssetSymbol>{market.symbol}</AssetSymbol>
               </AssetDetails>
             </AssetInfo>
+            
+            <div>
+              {renderKiloBonus(market.chainId)}
+            </div>
             
             <div>
               <RateValue>{formatCurrency(market.totalSupply)}</RateValue>

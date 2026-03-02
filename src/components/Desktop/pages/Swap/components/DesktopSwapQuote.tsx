@@ -86,8 +86,7 @@ export const DesktopSwapQuote = ({
 
   return (
     <QuoteContainer>
-      <QuoteTitle>
-        <QuoteIcon>📊</QuoteIcon>
+      <QuoteTitle> 
         Quote Details
       </QuoteTitle>
       
@@ -119,12 +118,12 @@ export const DesktopSwapQuote = ({
         <QuoteValue>5.00%</QuoteValue>
       </QuoteRow>
 
-      {quote.gasEstimate && (
+     {/* {quote.gasEstimate && (
         <GasEstimate>
           <GasIcon>⛽</GasIcon>
           Estimated gas: {quote.gasEstimate.toLocaleString()} units
         </GasEstimate>
-      )}
+      )}*/}
     </QuoteContainer>
   );
 };

@@ -507,12 +507,12 @@ export const DesktopHeader = () => {
             >
               Home
             </NavItem>*/} 
-            <NavItem
+           {/* <NavItem
               className={pathname === '/agents' ? 'active' : ''}
               onClick={() => handleNavigation('/agents')}
             >
               Agent Hub
-            </NavItem>
+            </NavItem>*/}
             <NavItem
               className={pathname === '/markets' ? 'active' : ''}
               onClick={() => handleNavigation('/markets')}
@@ -525,12 +525,12 @@ export const DesktopHeader = () => {
             >
               Swap
             </NavItem>
-           {/* <NavItem
+            <NavItem
               className={pathname === '/leaderboard' ? 'active' : ''}
               onClick={() => handleNavigation('/leaderboard')}
             >
               Leaderboard
-            </NavItem>*/}
+            </NavItem>
             <NavDropdownContainer>
               <NavItem
                 className={(pathname === '/portfolio' || showNavDropdown) ? 'active' : ''}
@@ -541,7 +541,7 @@ export const DesktopHeader = () => {
                 <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: showNavDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </NavItem>
               <NavDropdownMenu $isOpen={showNavDropdown}>
-                <NavDropdownItem
+               {/* <NavDropdownItem
                   className={pathname === '/leaderboard' ? 'active' : ''}
                   onClick={() => {
                     handleNavigation('/leaderboard');
@@ -549,7 +549,7 @@ export const DesktopHeader = () => {
                   }}
                 >
                   Leaderboard
-                </NavDropdownItem>
+                </NavDropdownItem>*/}
                 <NavDropdownItem
                   className={pathname === '/portfolio' ? 'active' : ''}
                   onClick={() => {
