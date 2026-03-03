@@ -45,6 +45,7 @@ export const CHAIN_CONFIGS = {
 // Smart Contract Addresses for each chain
 export const CHAIN_CONTRACTS = {
   kaia: {
+    // Lending Contracts
     Comptroller: '0x2591d179a0B1dB1c804210E111035a3a13c95a48',
     KiloOracle: '0xE370336C3074E76163b2f9B07876d0Cb3425488D',
     StablecoinJumpRateModel: '0x9948DFaC28D39c2EeDB7543E24c28df2922568A6',
@@ -61,10 +62,16 @@ export const CHAIN_CONTRACTS = {
     BORA: '0x02cbE46fB8A1F579254a9B485788f2D86Cad51aa',
     MBX: '0xD068c52d81f4409B9502dA926aCE3301cc41f623',
     KAIA: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    WKAIA: '0x19aac5f612f524b754ca7e7c41cbfa2e981a4432',
     stKAIA: "0x42952b873ed6f7f0a7e4992e2a9818e3a9001995",
-    StKAIA: "0x42952b873ed6f7f0a7e4992e2a9818e3a9001995"
+    StKAIA: "0x42952b873ed6f7f0a7e4992e2a9818e3a9001995",
+    // DEX Contracts
+    Router: '0x2C7C28D7C138d630fBD9F6Ed7504C2DB14D437cC',
+    QuoterV2: '0x5Fdbe804f53aE11862381373fB4E0cC6e9400879',
+    KLAW: '0xd145A1F18c5EDc9CeE0994e6a8e2eB9Dd0A40Cb6'
   },
   kub: {
+    // Lending Contracts
     Comptroller: '0x42f098E6aE5e81f357D3fD6e104BAA77A195133A',
     KiloOracle: '0xE370336C3074E76163b2f9B07876d0Cb3425488D',
     StablecoinRateModel: '0x7a4399356987E22156b9a0f8449E0a5a9713D5a6',
@@ -72,7 +79,12 @@ export const CHAIN_CONTRACTS = {
     cKUSDT: '0x5E9aF11F9a09174B87550B4Bfb4EdE65De933085',
     cKUB: '0x0cA8DaD1e517a9BB760Ba0C27051C4C3A036eA75',
     KUSDT: '0x7d984C24d2499D840eB3b7016077164e15E5faA6',
-    KUB: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+    KUB: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    // DEX Contracts
+    Router: '0x5570c281c8F51905Edb78AC65E11b3c236F68F7b',
+    QuoterV2: '0xc2E717DaB7DCaCcf1A463BB6ba66903BC41a7E1e',
+    KLAW: '0xa83a9e9B63D48551F56179a92A2Ccf7984B167ff',
+    KKUB: '0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5'
   },
   etherlink: {
     Comptroller: '0x42f098E6aE5e81f357D3fD6e104BAA77A195133A',
@@ -235,6 +247,20 @@ export const getTokenIcon = (symbol: string): string => {
 // Type definitions
 export type ChainId = keyof typeof CHAIN_CONFIGS;
 export type MarketKey = keyof typeof CHAIN_MARKETS[ChainId];
+
+// DEX Token configurations for each chain
+export const CHAIN_DEX_TOKENS = {
+  kaia: [
+    { symbol: 'KAIA', name: 'KAIA', address: CHAIN_CONTRACTS.kaia.KAIA, isNative: true },
+    { symbol: 'WKAIA', name: 'Wrapped KAIA', address: CHAIN_CONTRACTS.kaia.WKAIA, isNative: false },
+    { symbol: 'KLAW', name: 'KlawSter', address: CHAIN_CONTRACTS.kaia.KLAW, isNative: false }
+  ],
+  kub: [
+    { symbol: 'KUB', name: 'KUB', address: CHAIN_CONTRACTS.kub.KUB, isNative: true },
+    { symbol: 'KKUB', name: 'Wrapped KUB', address: CHAIN_CONTRACTS.kub.KKUB, isNative: false },
+    { symbol: 'KLAW', name: 'KlawSter', address: CHAIN_CONTRACTS.kub.KLAW, isNative: false }
+  ]
+} as const;
 
 // Get all chain IDs
 export const ALL_CHAIN_IDS: ChainId[] = Object.keys(CHAIN_CONFIGS) as ChainId[];

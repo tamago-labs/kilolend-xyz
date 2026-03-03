@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { kubChain } from '@/wagmi_config';
+import { kubChain, kaia } from '@/wagmi_config';
 import { formatUnits } from 'viem';
 import { createPublicClient, http } from 'viem';
-import { KUB_DEX_CONTRACTS } from './useDEXQuote';
+import { CHAIN_CONTRACTS } from '@/utils/chainConfig';
+import { useAuth } from '@/contexts/ChainContext';
 
 // Simple ERC20 ABI for balance
 const erc20Abi = [
@@ -19,14 +20,47 @@ const erc20Abi = [
 export const useTokenBalance = (tokenAddress?: string) => {
   const { address } = useConnection();
   const chainId = useChainId();
-  const isKUBChain = chainId === kubChain.id;
+  const { selectedAuthMethod } = useAuth();
 
   const [balance, setBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Determine current chain and configuration
+  const getCurrentChain = useCallback(() => {
+    // For LINE SDK, always use KAIA
+    if (selectedAuthMethod === 'line_sdk') {
+      return {
+        chain: 'kaia',
+        viemChain: kaia,
+        contracts: CHAIN_CONTRACTS.kaia
+      };
+    }
+
+    // For Web3 wallet, use current chain
+    if (chainId === kubChain.id) {
+      return {
+        chain: 'kub',
+        viemChain: kubChain,
+        contracts: CHAIN_CONTRACTS.kub
+      };
+    }
+
+    if (chainId === 8217) { // KAIA chain ID
+      return {
+        chain: 'kaia',
+        viemChain: kaia,
+        contracts: CHAIN_CONTRACTS.kaia
+      };
+    }
+
+    return null;
+  }, [chainId, selectedAuthMethod]);
+
+  const currentChain = getCurrentChain();
+
   const fetchBalance = useCallback(async () => {
-    if (!address || !tokenAddress || !isKUBChain) {
+    if (!address || !tokenAddress || !currentChain) {
       setBalance('0');
       return;
     }
@@ -36,15 +70,19 @@ export const useTokenBalance = (tokenAddress?: string) => {
 
     try {
       const publicClient = createPublicClient({
-        chain: kubChain,
+        chain: currentChain.viemChain,
         transport: http(),
       });
 
       let balanceRaw: bigint;
+      const { contracts } = currentChain;
 
-      // Check if it's native KUB
-      if (tokenAddress === KUB_DEX_CONTRACTS.KUB) {
-        // Get native KUB balance
+      // Check if it's native token for current chain
+      if (
+        (currentChain.chain === 'kub' && tokenAddress === (contracts as any).KUB) ||
+        (currentChain.chain === 'kaia' && tokenAddress === (contracts as any).KAIA)
+      ) {
+        // Get native token balance
         balanceRaw = await publicClient.getBalance({
           address: address as `0x${string}`,
         });
@@ -67,7 +105,7 @@ export const useTokenBalance = (tokenAddress?: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [address, tokenAddress, isKUBChain]);
+  }, [address, tokenAddress, currentChain]);
 
   useEffect(() => {
     fetchBalance();
