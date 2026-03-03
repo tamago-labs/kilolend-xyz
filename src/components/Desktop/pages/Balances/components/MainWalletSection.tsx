@@ -156,9 +156,6 @@ export const MainWalletSection = ({ balances, prices }: MainWalletSectionProps) 
     if (symbol === 'USDC') {
       return 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png';
     }
-    if (symbol === 'KLAW') {
-      return '/images/token-icons/klaw-icon.png';
-    }
     const tokenConfig = KAIA_MAINNET_TOKENS[symbol as keyof typeof KAIA_MAINNET_TOKENS];
     return tokenConfig?.icon || 'https://s2.coinmarketcap.com/static/img/coins/64x64/32880.png';
   };

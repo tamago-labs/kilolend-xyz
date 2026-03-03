@@ -142,7 +142,7 @@ export const DesktopFooter = () => {
         <BrandSection>
           <Logo src="/images/kilolend-logo-desktop.png" alt="KiloLend" />
           <BrandDescription>
-            KiloLend is the capital layer for AI agents — enabling autonomous lending, borrowing, and on-chain execution.
+            KiloLend brings AI-agent-powered DeFi to everyone, enabling automated lending, borrowing, and swaps with simple user access and LINE-based login.
           </BrandDescription>
           {/* <SocialLinks>
             <SocialLink href="https://twitter.com/kilolend" target="_blank" rel="noopener noreferrer">

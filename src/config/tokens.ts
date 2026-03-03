@@ -19,13 +19,6 @@ export const KUB_TOKENS = {
     address: '0x7d984C24d2499D840eB3b7016077164e15E5faA6',
     isNative: false,
   },
-  KLAW: {
-    symbol: 'KLAW',
-    name: 'KlawSter',
-    decimals: 18,
-    address: '0xa83a9e9B63D48551F56179a92A2Ccf7984B167ff',
-    isNative: false,
-  },
 } as const;
 
 export type KUBTokenKey = keyof typeof KUB_TOKENS;
