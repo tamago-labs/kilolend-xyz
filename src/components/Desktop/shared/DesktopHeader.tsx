@@ -506,6 +506,12 @@ export const DesktopHeader = () => {
               onClick={() => handleNavigation('/home')}
             >
               Home
+            </NavItem>*/} 
+           {/* <NavItem
+              className={pathname === '/agents' ? 'active' : ''}
+              onClick={() => handleNavigation('/agents')}
+            >
+              Agent Hub
             </NavItem>*/}
             <NavItem
               className={pathname === '/markets' ? 'active' : ''}
@@ -535,6 +541,15 @@ export const DesktopHeader = () => {
                 <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: showNavDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </NavItem>
               <NavDropdownMenu $isOpen={showNavDropdown}>
+               {/* <NavDropdownItem
+                  className={pathname === '/leaderboard' ? 'active' : ''}
+                  onClick={() => {
+                    handleNavigation('/leaderboard');
+                    setShowNavDropdown(false);
+                  }}
+                >
+                  Leaderboard
+                </NavDropdownItem>*/}
                 <NavDropdownItem
                   className={pathname === '/portfolio' ? 'active' : ''}
                   onClick={() => {
@@ -551,7 +566,7 @@ export const DesktopHeader = () => {
                     setShowNavDropdown(false);
                   }}
                 >
-                  Setup AI-Wallet
+                  Agent Wallet
                 </NavDropdownItem>
                 <NavDropdownItem
                   className={''}
@@ -617,11 +632,11 @@ export const DesktopHeader = () => {
                   Portfolio
                 </DropdownItem>
                 <DropdownItem onClick={handleAgentWallets}>
-                  Agent Wallets
+                  Agent Wallet
                 </DropdownItem>
-                <DropdownItem onClick={handleApiKeys}>
+              {/*  <DropdownItem onClick={handleApiKeys}>
                   Agent API Keys
-                </DropdownItem>
+                </DropdownItem>*/}
                 <DropdownSeparator />
                 <DisconnectItem onClick={handleDisconnect}>
                   Disconnect Wallet
