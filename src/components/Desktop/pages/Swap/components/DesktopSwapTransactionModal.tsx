@@ -315,7 +315,7 @@ export const DesktopSwapTransactionModal = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
-  const [mainTxHash, setMainTxHash] = useState<`0x${string}` | undefined>(undefined);
+  const [mainTxHash, setMainTxHash] = useState<string | undefined>(undefined);
   const [transactionTimeout, setTransactionTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Determine current chain and if using LINE SDK
@@ -324,9 +324,9 @@ export const DesktopSwapTransactionModal = ({
 
   // Wait for main transaction receipt (swap)
   const { data: mainReceipt, isSuccess: isMainConfirmed, error: receiptError } = useWaitForTransactionReceipt({
-    hash: mainTxHash,
+    hash: mainTxHash as `0x${string}` | undefined,
     query: {
-      enabled: !!mainTxHash,
+      enabled: !!mainTxHash && mainTxHash !== 'pending',
       retry: false, // Don't retry automatically to avoid infinite loops on errors
     },
   });
@@ -475,19 +475,32 @@ export const DesktopSwapTransactionModal = ({
 
       // Set transaction hash for real monitoring
       if (result.hash) {
-        setMainTxHash(result.hash as `0x${string}`);
-        console.log('Swap transaction sent, hash:', result.hash);
-        console.log('Required approval:', result.requiredApproval);
-        
-        // Set a timeout for transaction confirmation (5 minutes)
-        const timeout = setTimeout(() => {
-          setError('Transaction is taking longer than expected. It may still complete, but you can check the transaction hash for status updates.');
+        // For LINE SDK, if hash is "pending", handle it differently
+        if (isLineSDK && result.hash === 'pending') {
+          // Set transaction result immediately for LINE SDK since we can't track real transactions
+          setTransactionResult({
+            hash: 'pending',
+            status: 'pending'
+          });
           setIsProcessing(false);
-        }, 5 * 60 * 1000); // 5 minutes
-        
-        setTransactionTimeout(timeout);
-        // Keep isProcessing true until confirmation
-        // The useEffect will handle confirmation and set success
+          setCurrentStep('success');
+          onSwapComplete?.();
+        } else {
+          // For Web3 or real transaction hashes, set up monitoring
+          setMainTxHash(result.hash);
+          console.log('Swap transaction sent, hash:', result.hash);
+          console.log('Required approval:', result.requiredApproval);
+          
+          // Set a timeout for transaction confirmation (5 minutes)
+          const timeout = setTimeout(() => {
+            setError('Transaction is taking longer than expected. It may still complete, but you can check the transaction hash for status updates.');
+            setIsProcessing(false);
+          }, 5 * 60 * 1000); // 5 minutes
+          
+          setTransactionTimeout(timeout);
+          // Keep isProcessing true until confirmation
+          // The useEffect will handle confirmation and set success
+        }
       } else {
         throw new Error('Transaction failed: No transaction hash received');
       }

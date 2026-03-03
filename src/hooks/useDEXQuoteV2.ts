@@ -5,6 +5,7 @@ import { parseUnits, formatUnits } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { CHAIN_CONTRACTS, CHAIN_CONFIGS, CHAIN_DEX_TOKENS, ChainId } from '@/utils/chainConfig';
 import { useAuth } from '@/contexts/ChainContext';
+import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
 
 // QuoterV2 ABI for getting swap quotes
 const quoterV2Abi = [
@@ -59,7 +60,7 @@ export interface QuoteResult {
 }
 
 export const useDEXQuoteV2 = () => {
-  const { address } = useConnection();
+  const { account : address } = useWalletAccountStore();
   const chainId = useChainId();
   const { selectedAuthMethod } = useAuth();
 

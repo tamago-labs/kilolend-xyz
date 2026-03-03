@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { kubChain, kaia } from '@/wagmi_config';
 import { formatUnits } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { CHAIN_CONTRACTS } from '@/utils/chainConfig';
 import { useAuth } from '@/contexts/ChainContext';
+import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
 
 // Simple ERC20 ABI for balance
 const erc20Abi = [
@@ -18,7 +19,7 @@ const erc20Abi = [
 ] as const;
 
 export const useTokenBalance = (tokenAddress?: string) => {
-  const { address } = useConnection();
+  const { account : address } = useWalletAccountStore();
   const chainId = useChainId();
   const { selectedAuthMethod } = useAuth();
 
@@ -57,10 +58,9 @@ export const useTokenBalance = (tokenAddress?: string) => {
     return null;
   }, [chainId, selectedAuthMethod]);
 
-  const currentChain = getCurrentChain();
+  const currentChain = useMemo(() => getCurrentChain(), [getCurrentChain]);
 
   const fetchBalance = useCallback(async () => {
-
     if (!address || !tokenAddress || !currentChain) {
       setBalance('0');
       return;

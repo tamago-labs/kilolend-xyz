@@ -16,6 +16,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { CHAIN_DEX_TOKENS, CHAIN_CONFIGS, CHAIN_CONTRACTS } from '@/utils/chainConfig';
 import { useAuth } from '@/contexts/ChainContext';
 import { ChainId } from '@/utils/chainConfig';
+import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
 
 const SwapContainer = styled.div`
   min-height: 100vh;
@@ -40,7 +41,11 @@ const SwapCardContainer = styled.div`
 `;
 
 export const DesktopSwap = () => {
-  const { address } = useConnection();
+
+  const { account : address } = useWalletAccountStore();
+
+  // const { address } = useConnection();
+ 
   const { selectedAuthMethod } = useAuth();
   const { getQuote, isLoading: isQuoteLoading, error: quoteError, isSupportedChain, currentChain, availableTokens } = useDEXQuoteV2();
   const { approveToken, executeSwap, isLoading: isSwapLoading, error: swapError } = useDEXSwapV2();
@@ -182,7 +187,7 @@ export const DesktopSwap = () => {
   return (
     <SwapContainer>
       <MainContent>
-        <DesktopSwapHeader /> 
+        <DesktopSwapHeader />
         <SwapCentered>
           <SwapCardContainer>
             <DesktopSwapCard
@@ -211,11 +216,11 @@ export const DesktopSwap = () => {
             />
 
             {/* KYC Warning - shows only for KUB chain wrapped → native (unwrapping) */}
-            {currentChain === 'kub' && 
-             fromTokenConfig.symbol === 'KKUB' && 
-             toTokenConfig.symbol === 'KUB' && (
-              <DesktopKYCWarning />
-            )}
+            {currentChain === 'kub' &&
+              fromTokenConfig.symbol === 'KKUB' &&
+              toTokenConfig.symbol === 'KUB' && (
+                <DesktopKYCWarning />
+              )}
           </SwapCardContainer>
         </SwapCentered>
 

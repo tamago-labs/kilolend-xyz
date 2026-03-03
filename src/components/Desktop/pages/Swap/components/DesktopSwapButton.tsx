@@ -95,14 +95,14 @@ export const DesktopSwapButton = ({
   const routerAddress = getRouterAddress();
 
   // Check allowance for the input token
-  const { allowance, isSufficient, isLoading: isAllowanceLoading } = useAllowanceV2(
-    fromToken,
-    routerAddress || undefined,
-    amount
-  );
+  // const { allowance, isSufficient, isLoading: isAllowanceLoading } = useAllowanceV2(
+  //   fromToken,
+  //   routerAddress || undefined,
+  //   amount
+  // );
 
   const getButtonText = () => {
-    if (isLoading || isAllowanceLoading) {
+    if (isLoading) {
       return 'Processing...';
     }
     
@@ -132,9 +132,9 @@ export const DesktopSwapButton = ({
     const nativeAddress = getNativeAddress();
     
     // Check if approval is needed (skip for native tokens)
-    if (!isSufficient && fromToken !== nativeAddress) {
-      return 'Approve';
-    }
+    // if (!isSufficient && fromToken !== nativeAddress) {
+    //   return 'Approve';
+    // }
     
     return 'Swap';
   };
@@ -146,13 +146,14 @@ export const DesktopSwapButton = ({
       return null;
     };
     
-    const nativeAddress = getNativeAddress();
+    // const nativeAddress = getNativeAddress();
     
-    if (!isSufficient && fromToken !== nativeAddress) {
-      onApprove();
-    } else {
-      onSwap();
-    }
+    // if (!isSufficient && fromToken !== nativeAddress) {
+    //   onApprove();
+    // } else {
+    //   onSwap();
+    // }
+    onSwap();
   };
 
   const isDisabled = !isConnected || 
@@ -160,8 +161,7 @@ export const DesktopSwapButton = ({
                      !amount || 
                      parseFloat(amount) <= 0 || 
                      !quote || 
-                     isLoading ||
-                     isAllowanceLoading;
+                     isLoading
 
   // Different styling for approve vs swap
   const getNativeAddress = () => {
@@ -171,18 +171,18 @@ export const DesktopSwapButton = ({
   };
   
   const nativeAddress = getNativeAddress();
-  const buttonStyle = !isSufficient && amount && parseFloat(amount) > 0 && quote && fromToken !== nativeAddress ? {
-    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-  } : {};
+  // const buttonStyle = !isSufficient && amount && parseFloat(amount) > 0 && quote && fromToken !== nativeAddress ? {
+  //   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+  // } : {};
 
   return (
     <SwapButton
       onClick={handleClick}
       disabled={isDisabled}
-      style={buttonStyle}
+      // style={buttonStyle}
     >
       <ButtonContent>
-        {(isLoading || isAllowanceLoading) && <LoadingSpinner />}
+        {(isLoading) && <LoadingSpinner />}
         {getButtonText()}
       </ButtonContent>
     </SwapButton>

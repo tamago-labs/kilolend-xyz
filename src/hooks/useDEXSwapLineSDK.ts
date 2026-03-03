@@ -159,7 +159,7 @@ class DEXSwapLineSDKService {
           to: wrappedToken,
           data: this.wrappedTokenInterface.encodeFunctionData('deposit', []),
           value: amountInWei.toString(),
-          gasLimit: '0x5208' // 21000 gas
+          gasLimit: '0x15F90' // 90,000 gas for wrap
         };
       }
 
@@ -169,7 +169,7 @@ class DEXSwapLineSDKService {
           to: wrappedToken,
           data: this.wrappedTokenInterface.encodeFunctionData('withdraw', [amountInWei]),
           value: '0x0',
-          gasLimit: '0x5208' // 21000 gas
+          gasLimit: '0x15F90' // 90,000 gas for unwrap
         };
       }
 
@@ -218,7 +218,7 @@ class DEXSwapLineSDKService {
         to: router,
         data: multicallDataEncoded,
         value: isNativeIn ? amountInWei.toString() : '0x0',
-        gasLimit: '0x186A0' // 100000 gas
+        gasLimit: '0x989680' // 1,000,000 gas for swaps (10x increase)
       };
 
     } catch (error) {
@@ -298,12 +298,12 @@ export const useDEXSwapLineSDK = (): DEXSwapLineSDKReturn => {
         amount
       );
 
-      // Format for LINE SDK
+      // Format for LINE SDK - ensure value is properly formatted as hexadecimal
       const transaction = {
         from: account,
         to: approvalTx.to,
-        value: approvalTx.value,
-        gas: `0x${Math.min(gasLimit, 200000).toString(16)}`,
+        value: approvalTx.value.startsWith('0x') ? approvalTx.value : '0x' + BigInt(approvalTx.value).toString(16),
+        gas: `0x${Math.min(gasLimit, 300000).toString(16)}`, // Increased to 300k for approvals
         data: approvalTx.data,
       };
 
@@ -339,11 +339,11 @@ export const useDEXSwapLineSDK = (): DEXSwapLineSDKReturn => {
     try {
       const swapTx = dexSwapLineSDKService.createSwapTransaction(params, account);
 
-      // Format for LINE SDK
+      // Format for LINE SDK - ensure value is properly formatted as hexadecimal
       const transaction = {
         from: account,
         to: swapTx.to,
-        value: swapTx.value,
+        value: swapTx.value.startsWith('0x') ? swapTx.value : '0x' + BigInt(swapTx.value).toString(16),
         gas: swapTx.gasLimit,
         data: swapTx.data,
       };
