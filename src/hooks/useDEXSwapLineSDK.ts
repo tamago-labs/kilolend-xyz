@@ -27,12 +27,12 @@ const WRAPPED_TOKEN_ABI = [
   'function name() view returns (string)'
 ];
 
-// Router ABI for DEX swaps
+// Router ABI for DEX swaps (matching V1 exactly)
 const ROUTER_ABI = [
-  'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) external payable returns (uint256 amountOut)',
-  'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
-  'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)',
-  'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'
+  'function swapExactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 minAmountOut, uint160 limitSqrtP) params) external payable returns (uint256 amountOut)',
+  'function multicall(bytes[] data) external payable returns (bytes[] results)',
+  'function unwrapWeth(uint256 minAmount, address recipient) external',
+  'function refundEth() external payable'
 ];
 
 export interface SwapParams {
@@ -138,7 +138,8 @@ class DEXSwapLineSDKService {
    * Create swap transaction for KAIA DEX
    */
   createSwapTransaction(
-    params: SwapParams
+    params: SwapParams,
+    account: string
   ): { to: string; data: string; value: string; gasLimit: string } {
     try {
       const { tokenIn, tokenOut, amountIn, amountOutMin } = params;
@@ -172,25 +173,50 @@ class DEXSwapLineSDKService {
         };
       }
 
-      // Regular DEX swap using Router
-      const tokenInForRouter = isNativeIn ? wrappedToken : tokenIn;
-      const tokenOutForRouter = isNativeOut ? wrappedToken : tokenOut;
+      // Token swaps using Router with multicall (matching V1 logic)
+      const tokenInForSwap = isNativeIn ? wrappedToken : tokenIn;
+      const tokenOutForSwap = isNativeOut ? wrappedToken : tokenOut;
       const router = CHAIN_CONTRACTS.kaia.Router;
 
-      const swapData = this.routerInterface.encodeFunctionData('exactInputSingle', [{
-        tokenIn: ethers.getAddress(tokenInForRouter),
-        tokenOut: ethers.getAddress(tokenOutForRouter),
+      const recipient = isNativeOut ? router : ethers.getAddress(account);
+
+      const swapParams = {
+        tokenIn: ethers.getAddress(tokenInForSwap),
+        tokenOut: ethers.getAddress(tokenOutForSwap),
         fee: fee,
-        recipient: ethers.getAddress('0x0000000000000000000000000000000000000000'), // Will be replaced with actual recipient
+        recipient: recipient,
         deadline: BigInt(deadline),
         amountIn: amountInWei,
-        amountOutMinimum: amountOutMinWei,
-        sqrtPriceLimitX96: BigInt(0) // No price limit
-      }]);
+        minAmountOut: amountOutMinWei,
+        limitSqrtP: BigInt(0) // no price limit
+      };
+
+      // Build multicall data based on swap direction (matching V1)
+      let multicallData: string[] = [];
+
+      if (isNativeIn) {
+        // Native → Token: Router auto-wraps, just swap
+        multicallData = [
+          this.routerInterface.encodeFunctionData('swapExactInputSingle', [swapParams])
+        ];
+      } else if (isNativeOut) {
+        // Token → Native: Swap to wrapped then unwrap
+        multicallData = [
+          this.routerInterface.encodeFunctionData('swapExactInputSingle', [swapParams]),
+          this.routerInterface.encodeFunctionData('unwrapWeth', [0, ethers.getAddress(account)])
+        ];
+      } else {
+        // Token ↔ Token: Standard swap
+        multicallData = [
+          this.routerInterface.encodeFunctionData('swapExactInputSingle', [swapParams])
+        ];
+      }
+
+      const multicallDataEncoded = this.routerInterface.encodeFunctionData('multicall', [multicallData]);
 
       return {
         to: router,
-        data: swapData,
+        data: multicallDataEncoded,
         value: isNativeIn ? amountInWei.toString() : '0x0',
         gasLimit: '0x186A0' // 100000 gas
       };
@@ -285,9 +311,8 @@ export const useDEXSwapLineSDK = (): DEXSwapLineSDKReturn => {
       
       updateState({ isLoading: false });
 
-      // For LINE SDK, we'll use a placeholder hash since the transaction is sent
-      // The actual hash would be available in the transaction result callback
-      return { hash: 'pending-line-sdk-tx' };
+      // For LINE SDK, use simple "pending" hash - modal can show wallet address link
+      return { hash: 'pending' };
     } catch (error: any) {
       console.error('Error approving token:', error);
       const errorMessage = error.message || 'Approval failed';
@@ -312,17 +337,7 @@ export const useDEXSwapLineSDK = (): DEXSwapLineSDKReturn => {
     updateState({ isLoading: true, error: null });
 
     try {
-      const swapTx = dexSwapLineSDKService.createSwapTransaction(params);
-
-      // Update recipient in transaction data if needed
-      if (swapTx.data.includes('0x0000000000000000000000000000000000000000')) {
-        // Replace placeholder recipient with actual account
-        const accountAddress = ethers.getAddress(account);
-        swapTx.data = swapTx.data.replace(
-          '0000000000000000000000000000000000000000',
-          accountAddress.slice(2)
-        );
-      }
+      const swapTx = dexSwapLineSDKService.createSwapTransaction(params, account);
 
       // Format for LINE SDK
       const transaction = {
@@ -338,7 +353,7 @@ export const useDEXSwapLineSDK = (): DEXSwapLineSDKReturn => {
       updateState({ isLoading: false });
 
       return { 
-        hash: 'pending-line-sdk-swap',
+        hash: 'pending',
         requiredApproval: false
       };
     } catch (error: any) {

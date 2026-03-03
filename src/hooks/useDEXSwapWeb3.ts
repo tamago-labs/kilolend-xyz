@@ -4,6 +4,7 @@ import { parseUnits, formatUnits } from 'viem';
 import { CHAIN_CONTRACTS, CHAIN_DEX_TOKENS, ChainId } from '@/utils/chainConfig';
 import { createPublicClient, http } from 'viem';
 import { kaia, kubChain } from '@/wagmi_config';
+import { Abi, encodeFunctionData } from 'viem';
 
 export interface SwapParams {
   tokenIn: string;
@@ -50,22 +51,6 @@ const ERC20_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function'
-  },
-  {
-    inputs: [
-      { name: 'account', type: 'address' }
-    ],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-    type: 'function'
   }
 ];
 
@@ -87,7 +72,7 @@ const WRAPPED_TOKEN_ABI = [
   }
 ];
 
-// Router ABI for DEX swaps
+// Router ABI for DEX swaps (matching V1 exactly)
 const ROUTER_ABI = [
   {
     inputs: [
@@ -97,16 +82,53 @@ const ROUTER_ABI = [
           { name: 'tokenOut', type: 'address' },
           { name: 'fee', type: 'uint24' },
           { name: 'recipient', type: 'address' },
+          { name: 'deadline', type: 'uint256' },
           { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMinimum', type: 'uint256' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' }
+          { name: 'minAmountOut', type: 'uint256' },
+          { name: 'limitSqrtP', type: 'uint160' }
         ],
         name: 'params',
         type: 'tuple'
       }
     ],
-    name: 'exactInputSingle',
+    name: 'swapExactInputSingle',
     outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'payable',
+    type: 'function'
+  },
+  {
+    type: "function",
+    name: "multicall",
+    inputs: [
+      {
+        name: "data",
+        type: "bytes[]",
+        internalType: "bytes[]"
+      }
+    ],
+    outputs: [
+      {
+        name: "results",
+        type: "bytes[]",
+        internalType: "bytes[]"
+      }
+    ],
+    stateMutability: "payable"
+  },
+  {
+    inputs: [
+      { name: 'minAmount', type: 'uint256' },
+      { name: 'recipient', type: 'address' }
+    ],
+    name: 'unwrapWeth',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'refundEth',
+    outputs: [],
     stateMutability: 'payable',
     type: 'function'
   }
@@ -216,11 +238,6 @@ export const useDEXSwapWeb3 = (): DEXSwapWeb3Return => {
       throw new Error('Unsupported chain');
     }
 
-    // Native tokens don't need approval
-    if (tokenAddress === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') {
-      return { hash: 'native-token-no-approval' };
-    }
-
     updateState({ isLoading: true, error: null });
 
     try {
@@ -297,25 +314,68 @@ export const useDEXSwapWeb3 = (): DEXSwapWeb3Return => {
           args: [amountInWei]
         }) as string;
       } else {
-        // Regular DEX swap using Router
-        const tokenInForRouter = isNativeIn ? wrappedToken : tokenIn;
-        const tokenOutForRouter = isNativeOut ? wrappedToken : tokenOut;
+        // Token swaps using Router with multicall (matching V1 logic)
+        const tokenInForSwap = isNativeIn ? wrappedToken : tokenIn;
+        const tokenOutForSwap = isNativeOut ? wrappedToken : tokenOut;
         const router = chainConfig.contracts.Router;
+
+        const recipient = isNativeOut ? router : address;
+
+        const swapParams = {
+          tokenIn: tokenInForSwap as `0x${string}`,
+          tokenOut: tokenOutForSwap as `0x${string}`,
+          fee: Number(fee),
+          recipient: recipient as `0x${string}`,
+          deadline: deadline,
+          amountIn: amountInWei,
+          minAmountOut: amountOutMinWei,
+          limitSqrtP: BigInt(0) // no price limit
+        };
+
+        // Build multicall data based on swap direction (matching V1)
+        let multicallData: `0x${string}`[] = [];
+
+        if (isNativeIn) {
+          // Native → Token: Router auto-wraps, just swap
+          multicallData = [
+            encodeFunctionData({
+              abi: ROUTER_ABI as Abi,
+              functionName: 'swapExactInputSingle',
+              args: [swapParams]
+            })
+          ];
+        } else if (isNativeOut) {
+          // Token → Native: Swap to wrapped then unwrap
+          multicallData = [
+            encodeFunctionData({
+              abi: ROUTER_ABI as Abi,
+              functionName: 'swapExactInputSingle',
+              args: [swapParams]
+            }),
+            encodeFunctionData({
+              abi: ROUTER_ABI as Abi,
+              functionName: 'unwrapWeth',
+              args: [0, address]
+            })
+          ];
+        } else {
+          // Token ↔ Token: Standard swap
+          multicallData = [
+            encodeFunctionData({
+              abi: ROUTER_ABI as Abi,
+              functionName: 'swapExactInputSingle',
+              args: [swapParams]
+            })
+          ];
+        }
 
         hash = await writeContract.mutateAsync({
           address: router as `0x${string}`,
           abi: ROUTER_ABI,
-          functionName: 'exactInputSingle',
-          args: [{
-            tokenIn: tokenInForRouter as `0x${string}`,
-            tokenOut: tokenOutForRouter as `0x${string}`,
-            fee: Number(fee),
-            recipient: address,
-            amountIn: amountInWei,
-            amountOutMinimum: amountOutMinWei,
-            sqrtPriceLimitX96: BigInt(0) // No price limit
-          }],
-          value: isNativeIn ? amountInWei : undefined
+          functionName: 'multicall',
+          args: [multicallData],
+          value: isNativeIn ? amountInWei : BigInt(0),
+          chainId: chainConfig.chainId === 'kaia' ? 8217 : 96,
         }) as string;
       }
 

@@ -31,21 +31,7 @@ const erc20Abi = [
 ] as const;
 
 // WETH9-style wrapper ABI for KUB
-const wrapperAbi = [
-  {
-    inputs: [],
-    name: 'wrap',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function'
-  },
-  {
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    name: 'unwrap',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
+const wrapperAbi = [ 
   {
     inputs: [],
     name: 'deposit',
@@ -56,7 +42,7 @@ const wrapperAbi = [
   {
     inputs: [{ name: 'shares', type: 'uint256' }],
     name: 'withdraw',
-    outputs: [{ name: 'amount', type: 'uint256' }],
+    outputs: [],
     stateMutability: 'nonpayable',
     type: 'function'
   }

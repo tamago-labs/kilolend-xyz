@@ -52,8 +52,10 @@ const LoadingSpinner = styled.div`
   }
 `;
 
-import { useAllowance } from '@/hooks/useAllowance';
-import { KUB_DEX_CONTRACTS } from '@/hooks/useDEXQuote';
+import { useAllowanceV2 } from '@/hooks/useAllowanceV2';
+import { CHAIN_CONTRACTS } from '@/utils/chainConfig';
+import { useDEXQuoteV2 } from '@/hooks/useDEXQuoteV2';
+import { useChainId } from 'wagmi';
 
 interface DesktopSwapButtonProps {
   amount: string;
@@ -79,10 +81,23 @@ export const DesktopSwapButton = ({
   onApprove
 }: DesktopSwapButtonProps) => {
   
+  // Get current chain and contracts
+  const { isSupportedChain: isChainSupported } = useDEXQuoteV2();
+  const chainId = useChainId();
+  
+  // Get router address for current chain
+  const getRouterAddress = () => {
+    if (chainId === 8217) return CHAIN_CONTRACTS.kaia.Router; // KAIA
+    if (chainId === 96) return CHAIN_CONTRACTS.kub.Router; // KUB
+    return null;
+  };
+
+  const routerAddress = getRouterAddress();
+
   // Check allowance for the input token
-  const { allowance, isSufficient, isLoading: isAllowanceLoading } = useAllowance(
+  const { allowance, isSufficient, isLoading: isAllowanceLoading } = useAllowanceV2(
     fromToken,
-    KUB_DEX_CONTRACTS.Router,
+    routerAddress || undefined,
     amount
   );
 
@@ -96,7 +111,7 @@ export const DesktopSwapButton = ({
     }
     
     if (!isSupportedChain) {
-      return 'Switch to KUB Chain';
+      return 'Switch to Supported Chain';
     }
     
     if (!amount || parseFloat(amount) <= 0) {
@@ -107,8 +122,17 @@ export const DesktopSwapButton = ({
       return 'Fetching Quote...';
     }
     
-    // Check if approval is needed (skip for native KUB)
-    if (!isSufficient && fromToken !== KUB_DEX_CONTRACTS.KUB) {
+    // Get native token addresses for current chain
+    const getNativeAddress = () => {
+      if (chainId === 8217) return CHAIN_CONTRACTS.kaia.KAIA; // KAIA
+      if (chainId === 96) return CHAIN_CONTRACTS.kub.KUB; // KUB
+      return null;
+    };
+    
+    const nativeAddress = getNativeAddress();
+    
+    // Check if approval is needed (skip for native tokens)
+    if (!isSufficient && fromToken !== nativeAddress) {
       return 'Approve';
     }
     
@@ -116,7 +140,15 @@ export const DesktopSwapButton = ({
   };
 
   const handleClick = () => {
-    if (!isSufficient && fromToken !== KUB_DEX_CONTRACTS.KUB) {
+    const getNativeAddress = () => {
+      if (chainId === 8217) return CHAIN_CONTRACTS.kaia.KAIA; // KAIA
+      if (chainId === 96) return CHAIN_CONTRACTS.kub.KUB; // KUB
+      return null;
+    };
+    
+    const nativeAddress = getNativeAddress();
+    
+    if (!isSufficient && fromToken !== nativeAddress) {
       onApprove();
     } else {
       onSwap();
@@ -132,7 +164,14 @@ export const DesktopSwapButton = ({
                      isAllowanceLoading;
 
   // Different styling for approve vs swap
-  const buttonStyle = !isSufficient && amount && parseFloat(amount) > 0 && quote && fromToken !== KUB_DEX_CONTRACTS.KUB ? {
+  const getNativeAddress = () => {
+    if (chainId === 8217) return CHAIN_CONTRACTS.kaia.KAIA; // KAIA
+    if (chainId === 96) return CHAIN_CONTRACTS.kub.KUB; // KUB
+    return null;
+  };
+  
+  const nativeAddress = getNativeAddress();
+  const buttonStyle = !isSufficient && amount && parseFloat(amount) > 0 && quote && fromToken !== nativeAddress ? {
     background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
   } : {};
 

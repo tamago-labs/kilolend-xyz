@@ -285,6 +285,12 @@ export const DesktopSwapInput = ({
     if (symbol === 'KKUB') {
       return 'https://s2.coinmarketcap.com/static/img/coins/64x64/16093.png';
     }
+    if (symbol === 'KAIA') {
+      return '/images/kaia-token-icon.png';
+    }
+    if (symbol === 'WKAIA') {
+      return '/images/kaia-token-icon.png'; // Use same icon for now
+    }
     if (symbol === 'KLAW') {
       return '/images/token-icons/klaw-icon.png';
     }
@@ -340,7 +346,6 @@ export const DesktopSwapInput = ({
             </TokenIconContainer>
             <TokenInfo>
               <TokenSymbol>{token?.symbol || 'Select'}</TokenSymbol>
-              {/*<TokenName>{token?.name || ''}</TokenName>*/}
             </TokenInfo>
             <ChevronIcon disabled={disabled || !showTokenSelector} />
           </TokenSelector>

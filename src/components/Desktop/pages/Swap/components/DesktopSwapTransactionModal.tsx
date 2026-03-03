@@ -6,9 +6,12 @@ import { DesktopBaseModal } from '@/components/Desktop/modals/shared/DesktopBase
 
 import { formatUSD } from '@/utils/formatters';
 import { ExternalLink, Check, RotateCw } from 'react-feather';
-import { useDEXSwap } from '@/hooks/useDEXSwap';
+import { useDEXSwapV2 } from '@/hooks/useDEXSwapV2';
+import { CHAIN_CONFIGS } from '@/utils/chainConfig';
 import { useWaitForTransactionReceipt } from 'wagmi';
 import { useTokenBalancesV2 } from '@/hooks/useTokenBalancesV2';
+import { useChainId } from 'wagmi';
+import { useWalletAccountStore } from '@/components/Wallet/Account/auth.hooks';
 
 const ModalContent = styled.div`
   padding: 32px;
@@ -304,7 +307,9 @@ export const DesktopSwapTransactionModal = ({
   slippage,
 }: DesktopSwapTransactionModalProps) => {
 
-  const { executeSwapWithApproval, isLoading: swapLoading, error: swapError } = useDEXSwap();
+  const { executeSwapWithApproval, isLoading: swapLoading, error: swapError } = useDEXSwapV2();
+  const chainId = useChainId();
+  const { account: lineAccount } = useWalletAccountStore();
  
   const [currentStep, setCurrentStep] = useState<TransactionStep>('preview');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -312,6 +317,10 @@ export const DesktopSwapTransactionModal = ({
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
   const [mainTxHash, setMainTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [transactionTimeout, setTransactionTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Determine current chain and if using LINE SDK
+  const currentChain = chainId === 8217 ? 'kaia' : chainId === 96 ? 'kub' : 'unknown';
+  const isLineSDK = !!lineAccount && chainId === 8217; // LINE SDK only works on KAIA
 
   // Wait for main transaction receipt (swap)
   const { data: mainReceipt, isSuccess: isMainConfirmed, error: receiptError } = useWaitForTransactionReceipt({
@@ -656,11 +665,30 @@ export const DesktopSwapTransactionModal = ({
         </DetailRow>
         {transactionResult?.hash && (
           <DetailRow>
-            <DetailLabel>Transaction</DetailLabel>
-            <ClickableTransactionHash onClick={() => handleExternalLink(`https://kubscan.com/tx/${transactionResult.hash}`)}>
-              <DetailValue>{`${transactionResult.hash.slice(0, 6)}...${transactionResult.hash.slice(-4)}`}</DetailValue>
-              <ExternalLink size={12} />
-            </ClickableTransactionHash>
+            <DetailLabel>
+              {transactionResult.hash === 'pending' ? 'Wallet' : 'Transaction'}
+            </DetailLabel>
+            {transactionResult.hash === 'pending' ? (
+              <ClickableTransactionHash onClick={() => {
+                const walletUrl = currentChain === 'kaia' 
+                  ? `https://kaiascan.io/address/${lineAccount}`
+                  : `https://kubscan.com/address/${lineAccount}`;
+                handleExternalLink(walletUrl);
+              }}>
+                <DetailValue>{`${lineAccount?.slice(0, 6)}...${lineAccount?.slice(-4)}`}</DetailValue>
+                <ExternalLink size={12} />
+              </ClickableTransactionHash>
+            ) : (
+              <ClickableTransactionHash onClick={() => {
+                const explorerUrl = currentChain === 'kaia' 
+                  ? `https://kaiascan.io/tx/${transactionResult.hash}`
+                  : `https://kubscan.com/tx/${transactionResult.hash}`;
+                handleExternalLink(explorerUrl);
+              }}>
+                <DetailValue>{`${transactionResult.hash.slice(0, 6)}...${transactionResult.hash.slice(-4)}`}</DetailValue>
+                <ExternalLink size={12} />
+              </ClickableTransactionHash>
+            )}
           </DetailRow>
         )}
       </TransactionDetails>

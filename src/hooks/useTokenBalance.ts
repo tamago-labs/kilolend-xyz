@@ -60,6 +60,7 @@ export const useTokenBalance = (tokenAddress?: string) => {
   const currentChain = getCurrentChain();
 
   const fetchBalance = useCallback(async () => {
+
     if (!address || !tokenAddress || !currentChain) {
       setBalance('0');
       return;

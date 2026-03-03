@@ -3,8 +3,6 @@ import { ArrowUpDown } from 'lucide-react';
 import { DesktopSwapInput } from './DesktopSwapInput';
 import { DesktopSwapQuote } from './DesktopSwapQuote';
 import { DesktopSwapButton } from './DesktopSwapButton'; 
-import { KUB_DEX_CONTRACTS } from '@/hooks/useDEXQuote';
-import { KUB_TOKENS } from '@/config/tokens';
 import useTokenBalance from '@/hooks/useTokenBalance';
 import { useEffect } from 'react';
 
@@ -100,9 +98,17 @@ export const DesktopSwapCard = ({
   }, [tick])
 
   const getTokenInfo = (address: string) => {
-    if (address === KUB_DEX_CONTRACTS.KUB) return KUB_TOKENS.KUB;
-    if (address === KUB_DEX_CONTRACTS.KLAW) return KUB_TOKENS.KLAW;
-    if (address === KUB_DEX_CONTRACTS.KKUB) return KUB_TOKENS.KKUB;
+    // Find token in availableTokens array
+    const token = availableTokens.find(t => t.address === address);
+    if (token) {
+      return {
+        symbol: token.symbol,
+        name: token.name,
+        address: token.address,
+        decimals: token.decimals || 18,
+        icon: token.icon
+      };
+    }
     return null;
   };
 

@@ -8,13 +8,14 @@ import { DesktopSwapStats } from './components/DesktopSwapStats';
 import { DesktopSwapCard } from './components/DesktopSwapCard';
 import { DesktopSwapFooter } from './components/DesktopSwapFooter';
 import { DesktopSwapErrorMessage } from './components/DesktopSwapErrorMessage';
-import { DesktopSwapTransactionModalWrapper } from './components/DesktopSwapTransactionModalWrapper';
+import { DesktopSwapTransactionModal } from './components/DesktopSwapTransactionModal';
 import { DesktopKYCWarning } from './components/DesktopKYCWarning';
-import { useDEXQuote } from '@/hooks/useDEXQuote';
-import { useDEXSwap } from '@/hooks/useDEXSwap';
+import { useDEXQuoteV2 } from '@/hooks/useDEXQuoteV2';
+import { useDEXSwapV2 } from '@/hooks/useDEXSwapV2';
 import { useDebounce } from '@/hooks/useDebounce';
-import { KUB_DEX_CONTRACTS } from '@/hooks/useDEXQuote';
-import { KUB_TOKENS } from '@/config/tokens';
+import { CHAIN_DEX_TOKENS, CHAIN_CONFIGS, CHAIN_CONTRACTS } from '@/utils/chainConfig';
+import { useAuth } from '@/contexts/ChainContext';
+import { ChainId } from '@/utils/chainConfig';
 
 const SwapContainer = styled.div`
   min-height: 100vh;
@@ -40,18 +41,34 @@ const SwapCardContainer = styled.div`
 
 export const DesktopSwap = () => {
   const { address } = useConnection();
-  const { getQuote, isLoading: isQuoteLoading, error: quoteError, isSupportedChain } = useDEXQuote();
-  const { approveToken, isLoading: isSwapLoading, error: swapError } = useDEXSwap();
+  const { selectedAuthMethod } = useAuth();
+  const { getQuote, isLoading: isQuoteLoading, error: quoteError, isSupportedChain, currentChain, availableTokens } = useDEXQuoteV2();
+  const { approveToken, executeSwap, isLoading: isSwapLoading, error: swapError } = useDEXSwapV2();
 
-  const [fromToken, setFromToken] = useState<string>(KUB_DEX_CONTRACTS.KUB);
-  const [toToken, setToToken] = useState<string>(KUB_DEX_CONTRACTS.KLAW);
+  const [selectedChain, setSelectedChain] = useState<ChainId>('kaia'); // Default to KAIA for LINE SDK
+  const [fromToken, setFromToken] = useState<string>('');
+  const [toToken, setToToken] = useState<string>('');
   const [amount, setAmount] = useState('');
   const [quote, setQuote] = useState<any>(null);
   const [error, setError] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tick, setTick] = useState(1)
+  const [tick, setTick] = useState(1);
+
+  // Set default tokens based on current chain
+  useEffect(() => {
+    if (availableTokens.length > 0 && !fromToken) {
+      const nativeToken = availableTokens.find((t: any) => t.isNative);
+      const wrappedToken = availableTokens.find((t: any) => !t.isNative && t.symbol !== 'KLAW');
+      const klawToken = availableTokens.find((t: any) => t.symbol === 'KLAW');
+
+      if (nativeToken && wrappedToken) {
+        setFromToken(nativeToken.address);
+        setToToken(klawToken?.address || wrappedToken.address);
+      }
+    }
+  }, [availableTokens]);
 
   // Debounce the amount for quote fetching (500ms delay)
   const debouncedAmount = useDebounce(amount, 500);
@@ -65,36 +82,38 @@ export const DesktopSwap = () => {
     }
   }, [amount, debouncedAmount]);
 
-  // Auto-get quote when debounced amount changes
-  useEffect(() => {
-    if (debouncedAmount && parseFloat(debouncedAmount) > 0 && isSupportedChain) {
-      const fetchQuote = async () => {
-        try {
-          const quoteResult = await getQuote({
-            tokenIn: fromToken,
-            tokenOut: toToken,
-            amountIn: debouncedAmount,
-            slippage: 5
-          });
-          setQuote(quoteResult);
-          setError('');
-        } catch (err: any) {
-          setError(err.message);
-          setQuote(null);
-        }
-      };
-      fetchQuote();
-    } else {
+  // Memoize the quote fetching function
+  const fetchQuote = useCallback(async () => {
+    if (!debouncedAmount || parseFloat(debouncedAmount) <= 0 || !isSupportedChain || !fromToken || !toToken) {
+      setQuote(null);
+      return;
+    }
+
+    try {
+      const quoteResult = await getQuote({
+        tokenIn: fromToken,
+        tokenOut: toToken,
+        amountIn: debouncedAmount,
+        slippage: 5
+      });
+      setQuote(quoteResult);
+      setError('');
+    } catch (err: any) {
+      setError(err.message);
       setQuote(null);
     }
-  }, [debouncedAmount, fromToken, toToken, getQuote, isSupportedChain]);
+  }, [debouncedAmount, fromToken, toToken, isSupportedChain]);
+
+  // Auto-get quote when dependencies change
+  useEffect(() => {
+    fetchQuote();
+  }, [fetchQuote]);
 
   const handleSwap = () => {
     if (!quote || !address) return;
     // Just open the modal - the actual swap logic is in DesktopSwapTransactionModal
     setIsModalOpen(true);
   };
-
 
   const handleModalClose = () => {
     setIsModalOpen(false);
@@ -105,17 +124,17 @@ export const DesktopSwap = () => {
     // Reset form after successful swap
     setAmount('');
     setQuote(null);
-    // setIsModalOpen(false);
     setError('');
-    setTick(tick + 1)
-  }, [tick])
+    setTick(tick + 1);
+  }, [tick]);
 
   const handleApprove = async () => {
-    if (!address) return;
+    if (!address || !currentChain) return;
 
     try {
       setIsProcessing(true);
-      await approveToken(fromToken, KUB_DEX_CONTRACTS.Router, amount);
+      const contracts = currentChain === 'kaia' ? CHAIN_CONTRACTS.kaia : CHAIN_CONTRACTS.kub;
+      await approveToken(fromToken, contracts.Router, amount);
       // Approval successful - you can now proceed with swap
       setError('');
     } catch (err: any) {
@@ -126,8 +145,9 @@ export const DesktopSwap = () => {
   };
 
   const handleSwapTokens = () => {
+    const tempFrom = fromToken;
     setFromToken(toToken);
-    setToToken(fromToken);
+    setToToken(tempFrom);
     setAmount('');
     setQuote(null);
   };
@@ -136,22 +156,9 @@ export const DesktopSwap = () => {
   const currentError = error || quoteError || swapError;
 
   // Get token configurations
-  // Available tokens for selection
-  const availableTokens = [
-    { symbol: 'KUB', name: 'KUB', address: KUB_DEX_CONTRACTS.KUB, isNative: true },
-    { symbol: 'KKUB', name: 'Wrapped KUB', address: KUB_DEX_CONTRACTS.KKUB, isNative: false },
-    { symbol: 'KLAW', name: 'KlawSter', address: KUB_DEX_CONTRACTS.KLAW, isNative: false }
-  ];
-
   const getTokenConfig = (tokenAddress: string) => {
-    if (tokenAddress === KUB_DEX_CONTRACTS.KUB) {
-      return { symbol: 'KUB', address: tokenAddress, isNative: true };
-    } else if (tokenAddress === KUB_DEX_CONTRACTS.KKUB) {
-      return { symbol: 'KKUB', address: tokenAddress, isNative: false };
-    } else if (tokenAddress === KUB_DEX_CONTRACTS.KLAW) {
-      return { symbol: 'KLAW', address: tokenAddress, isNative: false };
-    }
-    return { symbol: 'UNKNOWN', address: tokenAddress, isNative: false };
+    const token = availableTokens.find((t: any) => t.address === tokenAddress);
+    return token || { symbol: 'UNKNOWN', address: tokenAddress, isNative: false };
   };
 
   const fromTokenConfig = getTokenConfig(fromToken);
@@ -175,10 +182,7 @@ export const DesktopSwap = () => {
   return (
     <SwapContainer>
       <MainContent>
-        <DesktopSwapHeader />
-
-        {/*<DesktopSwapStats />*/}
-
+        <DesktopSwapHeader /> 
         <SwapCentered>
           <SwapCardContainer>
             <DesktopSwapCard
@@ -206,8 +210,10 @@ export const DesktopSwap = () => {
               isSupportedChain={isSupportedChain}
             />
 
-            {/* KYC Warning - shows only for KKUB → KUB (unwrapping) */}
-            {fromToken === KUB_DEX_CONTRACTS.KKUB && toToken === KUB_DEX_CONTRACTS.KUB && (
+            {/* KYC Warning - shows only for KUB chain wrapped → native (unwrapping) */}
+            {currentChain === 'kub' && 
+             fromTokenConfig.symbol === 'KKUB' && 
+             toTokenConfig.symbol === 'KUB' && (
               <DesktopKYCWarning />
             )}
           </SwapCardContainer>
@@ -215,7 +221,7 @@ export const DesktopSwap = () => {
 
         <DesktopSwapFooter />
 
-        <DesktopSwapTransactionModalWrapper
+        <DesktopSwapTransactionModal
           isOpen={isModalOpen}
           onClose={handleModalClose}
           onSwapComplete={handleSwapComplete}
