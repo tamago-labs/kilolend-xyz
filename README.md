@@ -56,7 +56,17 @@ KiloLend is deployed on multiple mainnet networks, with each deployment tailored
 - **cBORA (Volatile):** [0xA7247a6f5EaC85354642e0E90B515E2dC027d5F4](https://www.kaiascan.io/address/0xA7247a6f5EaC85354642e0E90B515E2dC027d5F4)  
 - **cMBX (Volatile):** [0xa024B1DE3a6022FB552C2ED9a8050926Fb22d7b6](https://www.kaiascan.io/address/0xa024B1DE3a6022FB552C2ED9a8050926Fb22d7b6)  
 - **cStKAIA (Volatile):** [0x8A424cCf2D2B7D85F1DFb756307411D2BBc73e07](https://www.kaiascan.io/address/0x8A424cCf2D2B7D85F1DFb756307411D2BBc73e07)  
-- **cKAIA (Volatile):** [0x2029f3E3C667EBd68b1D29dbd61dc383BdbB56e5](https://www.kaiascan.io/address/0x2029f3E3C667EBd68b1D29dbd61dc383BdbB56e5)
+- **cKAIA (Volatile):** [0x2029f3E3C667EBd68b1D29dbd61dc383BdbB56e5](https://www.kaiascan.io/address/0x2029f3E3C667EBd68b1D29dbd61dc383BdbB56e5)  
+
+#### DEX Contracts
+- **PoolOracle:** [0x7d16bc59F533b090A3a13B8Ad25c6a041B23BbEF](https://www.kaiascan.io/address/0x7d16bc59F533b090A3a13B8Ad25c6a041B23BbEF)  
+- **Factory:** [0x86312E4e86f8424E8AFEe8aAFE9c1A33a6381f85](https://www.kaiascan.io/address/0x86312E4e86f8424E8AFEe8aAFE9c1A33a6381f85)  
+- **Descriptor:** [0x6BD83dA0247d99deD926C7F20aD4465999bc8693](https://www.kaiascan.io/address/0x6BD83dA0247d99deD926C7F20aD4465999bc8693)  
+- **AntiSnipAttackPositionManager:** [0x1CAbFFE0fBC15E549d4d2df4328eDdc10F7f27f2](https://www.kaiascan.io/address/0x1CAbFFE0fBC15E549d4d2df4328eDdc10F7f27f2)  
+- **Router:** [0x2C7C28D7C138d630fBD9F6Ed7504C2DB14D437cC](https://www.kaiascan.io/address/0x2C7C28D7C138d630fBD9F6Ed7504C2DB14D437cC)  
+- **QuoterV2:** [0x5Fdbe804f53aE11862381373fB4E0cC6e9400879](https://www.kaiascan.io/address/0x5Fdbe804f53aE11862381373fB4E0cC6e9400879)  
+- **TicksFeesReader:** [0x99128C46B6452557b7CE697A916Fb7f41Ef71092](https://www.kaiascan.io/address/0x99128C46B6452557b7CE697A916Fb7f41Ef71092)  
+- **KLAW Token:** [0xd145A1F18c5EDc9CeE0994e6a8e2eB9Dd0A40Cb6](https://www.kaiascan.io/address/0xd145A1F18c5EDc9CeE0994e6a8e2eB9Dd0A40Cb6)
 
 
 ## Learn More About dapp-portal-sdk
