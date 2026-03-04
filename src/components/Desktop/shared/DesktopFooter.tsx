@@ -35,8 +35,8 @@ const BrandSection = styled.div`
 `;
 
 const Logo = styled.img`
-  height: 66px;
-  width: 209px; 
+  height: 78px;
+  width: 232px; 
   margin-bottom: 8px;
 `;
 
@@ -142,22 +142,8 @@ export const DesktopFooter = () => {
         <BrandSection>
           <Logo src="/images/kilolend-logo-desktop.png" alt="KiloLend" />
           <BrandDescription>
-            KiloLend is the capital layer for AI agents — enabling autonomous lending, borrowing, and on-chain execution.
-          </BrandDescription>
-          {/* <SocialLinks>
-            <SocialLink href="https://twitter.com/kilolend" target="_blank" rel="noopener noreferrer">
-              <Twitter size={18} />
-            </SocialLink>
-            <SocialLink href="https://discord.gg/kilolend" target="_blank" rel="noopener noreferrer">
-              <MessageCircle size={18} />
-            </SocialLink>
-            <SocialLink href="https://github.com/tamago-labs/kilolend" target="_blank" rel="noopener noreferrer">
-              <GitHub size={18} />
-            </SocialLink>
-            <SocialLink href="mailto:support@tamagolabs.com" target="_blank" rel="noopener noreferrer">
-              <Mail size={18} />
-            </SocialLink>
-          </SocialLinks>*/}
+            KiloLend is the capital layer for AI agents — enabling autonomous lending, borrowing, swapping, and on-chain execution through programmable wallets.
+          </BrandDescription> 
         </BrandSection>
 
         {/* Product Links */}

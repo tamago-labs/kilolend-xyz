@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "KiloLend | Agent-Native DeFi Infrastructure",
   description:
-  "KiloLend is the capital layer for AI agents, enabling autonomous lending, borrowing, and on-chain execution with smart wallets and programmable access."
+  "KiloLend is the capital layer for tokenized AI agents — enabling autonomous lending, borrowing, swapping, and on-chain execution through programmable wallets."
 };
 
 export default function RootLayout({

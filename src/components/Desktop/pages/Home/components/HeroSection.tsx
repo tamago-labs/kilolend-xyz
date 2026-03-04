@@ -380,9 +380,11 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
     <HeroSectionWrapper>
       <HeroContainer>
         <HeroContent>
-          <HeroTitle>DeFi Built for AI Agents — Simple for You</HeroTitle>
+          <HeroTitle>
+            Agent-Native DeFi Infrastructure
+          </HeroTitle>
           <HeroSubtitle>
-           KiloLend is the capital layer for AI agents — enabling autonomous lending, borrowing, and on-chain execution.
+           Powering AI agents with capital to lend, borrow, trade, and execute strategies autonomously on-chain.
           </HeroSubtitle>
 
           <CTAContainer>
@@ -446,7 +448,7 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
               </RequestButton>
             </SupportGroup>
             
-            <SupportGroup>
+           {/* <SupportGroup>
               <SupportLabel>Supported Protocols:</SupportLabel>
               <SupportIcon
                 onMouseEnter={() => setTooltipVisible('kilolend')}
@@ -470,7 +472,7 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
                   Request new protocol
                 </Tooltip>
               </RequestButton>
-            </SupportGroup>
+            </SupportGroup>*/}
           </SupportSection>
 
         </HeroContent>

@@ -18,6 +18,7 @@ import { NewsModal } from './NewsModal';
 import { DepositModal } from '../Profile/DepositModal';
 import { WithdrawModal as AIWithdrawModal } from '../Profile/WithdrawModal';
 import { AIAgentModal } from './AIAgentModal';
+import { LineMiniDAppModal } from './LineMiniDAppModal';
 
 
 export const GlobalModalManager = () => {
@@ -183,21 +184,14 @@ export const GlobalModalManager = () => {
           />
         );
 
-      // case 'buy':
-      //   return (
-      //     <BuyModal
-      //       isOpen={isOpen}
-      //       onClose={closeModal}
-      //     />
-      //   );
-      // case 'swap':
-      //   return (
-      //     <SwapModal
-      //       // isOpen={isOpen}
-      //       onClose={closeModal}
-      //     />
-      //   );
-
+      case 'lineMiniDApp':
+        return (
+          <LineMiniDAppModal
+            isOpen={isOpen}
+            onClose={closeModal}
+          />
+        );
+ 
       default:
         return null;
     }

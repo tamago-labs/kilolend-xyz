@@ -13,11 +13,16 @@ import { liff } from "@/utils/liff";
 import { KAIA_SCAN_URL } from "@/utils/ethersConfig"
 import { useRouter, usePathname } from 'next/navigation';
 import { DesktopWalletAddressModal, DesktopSettingsModal, NetworkSwitchModal, DesktopWalletConnectionModal } from '../modals';
-import { Logo } from "@/components/Assets/Logo";
+// import { Logo } from "@/components/Assets/Logo";
 import { signatureService } from '@/services/signatureService';
 import { useConnection, useChainId, useDisconnect } from 'wagmi';
 import { kaia, kubChain, etherlink } from '@/wagmi_config';
 
+const Logo = styled.img`
+  height: 52px;
+  width: 154px;  
+  margin-bottom: 4px;
+`;
 
 const HeaderContainer = styled.header`
   display: flex;
@@ -498,7 +503,7 @@ export const DesktopHeader = () => {
       <HeaderContainer>
         <LeftSection>
           <BrandContainer onClick={handleBrandClick}>
-            <BrandName>KiloLend</BrandName>
+             <Logo src="/images/kilolend-logo-desktop.png" alt="KiloLend" />
           </BrandContainer>
           <Navigation>
             {/*  <NavItem 
@@ -526,11 +531,17 @@ export const DesktopHeader = () => {
               Swap
             </NavItem>
             <NavItem
+              className={pathname === '/agents' ? 'active' : ''}
+              onClick={() => handleNavigation('/agents')}
+            >
+              Agent Hub
+            </NavItem>
+           {/* <NavItem
               className={pathname === '/leaderboard' ? 'active' : ''}
               onClick={() => handleNavigation('/leaderboard')}
             >
               Leaderboard
-            </NavItem>
+            </NavItem>*/}
             <NavDropdownContainer>
               <NavItem
                 className={(pathname === '/portfolio' || showNavDropdown) ? 'active' : ''}
@@ -541,7 +552,7 @@ export const DesktopHeader = () => {
                 <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: showNavDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </NavItem>
               <NavDropdownMenu $isOpen={showNavDropdown}>
-               {/* <NavDropdownItem
+                <NavDropdownItem
                   className={pathname === '/leaderboard' ? 'active' : ''}
                   onClick={() => {
                     handleNavigation('/leaderboard');
@@ -549,7 +560,7 @@ export const DesktopHeader = () => {
                   }}
                 >
                   Leaderboard
-                </NavDropdownItem>*/}
+                </NavDropdownItem>
                 <NavDropdownItem
                   className={pathname === '/portfolio' ? 'active' : ''}
                   onClick={() => {

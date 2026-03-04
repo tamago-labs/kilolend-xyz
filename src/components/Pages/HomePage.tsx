@@ -214,45 +214,41 @@ export const HomePage = () => {
   };
 
   const handleAskAI = () => {
-    openModal('ai-agent');
+    openModal('lineMiniDApp');
   };
 
   const handleSupply = () => {
-    openModal('supply');
+    openModal('lineMiniDApp');
   };
 
   const handleBorrow = () => {
-    openModal('borrow');
+    openModal('lineMiniDApp');
   };
 
   const handleLearn = () => {
-    openModal('faq');
+    openModal('lineMiniDApp');
   };
 
   const handleInvite = () => {
-    openModal('invite');
+    openModal('lineMiniDApp');
   };
 
   const handleKilo = () => {
-    openModal('kilo');
+    openModal('lineMiniDApp');
   };
 
   const handleLeaderboard = () => {
-    openModal('leaderboard');
+    openModal('lineMiniDApp');
   };
 
   const handleSend = () => {
-    openModal('send');
+    openModal('lineMiniDApp');
   };
 
   const handleNews = () => {
     openModal('news');
   }
-
-  // const handleSwap = () => {
-  //   openModal('swap');
-  // };
-
+ 
   return (
     <PageContainer>
       <WelcomeModal
@@ -356,44 +352,7 @@ export const HomePage = () => {
               />
             </IconCircle>
             <IconLabel>Send</IconLabel>
-          </IconButton>
-          {/* Row 3 */}
-
-          {/* Swap */}
-          {/*<IconButton onClick={handleSwap}>
-            <IconCircle $index="5">
-              <IconImage
-                src="./images/icon-trade.png"
-                alt="SWAP"
-              />
-            </IconCircle>
-            <IconLabel>Swap</IconLabel>
-          </IconButton>*/}
-
-          {/*<IconButton onClick={handleBuy}>
-            <IconCircle $index="10">
-              <IconImage
-                src="./images/icon-kilo.png"
-                alt="BUY"
-              />
-            </IconCircle>
-            <IconLabel>Starter Package</IconLabel>
-          </IconButton>*/}
-
-          {/* Boost with APY badge */}
-          {/* <IconButton onClick={handleBoost}>
-            <IconCircle $index="9">
-              <IconImage
-                src="./images/icon-rocket.png"
-                alt="BOOST"
-              />
-              <APYBadge>+1.5x</APYBadge>
-              <APYBadge>New</APYBadge> 
-            </IconCircle>
-            <IconLabel>AI Vault</IconLabel>
-          </IconButton> */}
-
-
+          </IconButton> 
         </IconGrid>
       </ActionsSection>
     </PageContainer>
