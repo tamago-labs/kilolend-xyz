@@ -24,7 +24,7 @@ export const DesktopSwapHeader = () => {
   return (
     <HeaderContainer>
       <Title>Swap</Title>
-      <Subtitle>Seamlessly swap into DeFi AI-agent tokens within the ecosystem</Subtitle>
+      <Subtitle>Seamlessly swap into AI-agent tokens within the ecosystem</Subtitle>
     </HeaderContainer>
   );
 };

@@ -4,8 +4,7 @@ import styled from 'styled-components';
 import { useEffect, useState } from 'react';
 import { DesktopMarketStatsV2 } from './DesktopMarketStatsV2';
 import { DesktopMarketFiltersV2 } from './DesktopMarketFiltersV2';
-import { DesktopMarketTableV2 } from './DesktopMarketTableV2';
-import { KiloPointsBanner } from '@/components/Desktop/pages/Markets/components/KiloPointsBanner';
+import { DesktopMarketTableV2 } from './DesktopMarketTableV2'; 
 import { CHAIN_CONFIGS } from '@/utils/chainConfig';
 import { Chain } from './ChainSelector';
 
@@ -70,7 +69,7 @@ export const DesktopMarketsV2 = () => {
       <MainContent>
         <MarketsHeader>
           <PageTitle>Lending Markets</PageTitle>
-          <PageSubtitle>Browse and compare lending rates across KAIA, KUB, and Etherlink</PageSubtitle>
+          <PageSubtitle>Lend assets that fuel AI agent operations across multiple chains</PageSubtitle>
         </MarketsHeader>
 
         <DesktopMarketStatsV2 />
@@ -93,8 +92,7 @@ export const DesktopMarketsV2 = () => {
           sortBy={sortBy}
           selectedChain={selectedChain}
         />
-
-        {/* <KiloPointsBanner /> */}
+ 
       </MainContent>
     </MarketsContainer>
   );

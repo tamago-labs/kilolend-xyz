@@ -3,6 +3,7 @@
 import styled from 'styled-components';
 import { useState, useEffect, useCallback } from 'react';
 import { useConnection } from 'wagmi';
+import { useRouter } from 'next/navigation';
 import { DesktopSwapHeader } from './components/DesktopSwapHeader';
 import { DesktopSwapStats } from './components/DesktopSwapStats';
 import { DesktopSwapCard } from './components/DesktopSwapCard';
@@ -40,8 +41,35 @@ const SwapCardContainer = styled.div`
   max-width: 600px;
 `;
 
-export const DesktopSwap = () => {
+const AgentHubMessage = styled.div`
+  text-align: center;
+  margin-bottom: 32px;
+`;
 
+const MessageContainer = styled.div`
+  font-size: 14px;
+  color: #06C755;
+  font-weight: 500;
+  padding: 12px 24px;
+  background: rgba(6, 199, 85, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+  border: 1px solid rgba(6, 199, 85, 0.2);
+`;
+
+const AgentHubLink = styled.a`
+  color: #06C755;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export const DesktopSwap = () => {
+  const router = useRouter();
   const { account : address } = useWalletAccountStore();
 
   // const { address } = useConnection();
@@ -188,6 +216,11 @@ export const DesktopSwap = () => {
     <SwapContainer>
       <MainContent>
         <DesktopSwapHeader />
+        <AgentHubMessage>
+          <MessageContainer>
+            For full details on each AI agent, including capabilities and strategies, visit the <AgentHubLink onClick={() => router.push('/agents')}>Agent Hub</AgentHubLink>
+          </MessageContainer>
+        </AgentHubMessage>
         <SwapCentered>
           <SwapCardContainer>
             <DesktopSwapCard

@@ -512,7 +512,7 @@ export const DesktopHeader = () => {
             >
               Home
             </NavItem>*/} 
-           {/* <NavItem
+            {/*<NavItem
               className={pathname === '/agents' ? 'active' : ''}
               onClick={() => handleNavigation('/agents')}
             >
@@ -530,12 +530,12 @@ export const DesktopHeader = () => {
             >
               Swap
             </NavItem>
-            <NavItem
+             <NavItem
               className={pathname === '/agents' ? 'active' : ''}
               onClick={() => handleNavigation('/agents')}
             >
               Agent Hub
-            </NavItem>
+            </NavItem> 
            {/* <NavItem
               className={pathname === '/leaderboard' ? 'active' : ''}
               onClick={() => handleNavigation('/leaderboard')}
