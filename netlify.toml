@@ -19,3 +19,7 @@
   #  publish = "dist" # Folder with the static content for _redirect file
 
   ## more info on configuring this file: https://ntl.fyi/file-based-build-config
+
+
+[build.environment]
+  NODE_OPTIONS = "--max-old-space-size=4096"
