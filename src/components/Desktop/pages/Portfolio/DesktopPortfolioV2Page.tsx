@@ -70,7 +70,7 @@ export const DesktopPortfolioV2 = () => {
 
   const { balances, refetch } = useTokenBalancesV2();
   const { prices } = usePriceUpdates({
-    symbols: ["KAIA", "USDT", "stKAIA", "MBX", "BORA", "SIX", "XTZ", "KUB"]
+    symbols: ["KAIA", "USDT", "stKAIA", "MBX", "BORA", "SIX", "XTZ", "KUB", "KLAW"]
   });
 
   // Portfolio positions state

@@ -190,10 +190,45 @@ interface AgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   agent: AgentData;
+  prices?: Record<string, any>;
+  getFormattedPrice?: (symbol: string) => string;
+  getFormattedChange?: (symbol: string) => { text: string; isPositive: boolean };
+  pricesLoading?: boolean;
 }
 
-export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
+export function AgentModal({ 
+  isOpen, 
+  onClose, 
+  agent, 
+  prices, 
+  getFormattedPrice, 
+  getFormattedChange, 
+  pricesLoading 
+}: AgentModalProps) {
   const isComingSoon = agent.id === 'mantis' || agent.id === 'babyclaw';
+
+  // Get the token symbol without $ prefix for price lookup
+  const tokenSymbol = agent.symbol.replace('$', '');
+  
+  // Check if we have real price data for this token
+  const hasRealPrice = prices && prices[tokenSymbol];
+  
+  // Use real price if available, otherwise fallback to mock data or show loading
+  const displayPrice = hasRealPrice && getFormattedPrice 
+    ? getFormattedPrice(tokenSymbol) 
+    : pricesLoading 
+      ? 'Loading...' 
+      : 'N/A';
+  
+  const displayChange = hasRealPrice && getFormattedChange
+    ? getFormattedChange(tokenSymbol)
+    : { text: 'N/A', isPositive: true };
+
+  // Get market data if available
+  const marketData = hasRealPrice && prices[tokenSymbol] ? {
+    marketCap: prices[tokenSymbol].market_cap,
+    volume24h: prices[tokenSymbol].volume_24h
+  } : null;
 
   return (
     <DesktopBaseModal 
@@ -240,26 +275,34 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
         </div>
       </Section>
 
-      {/*<Section>
+      <Section>
         <SectionTitle>Performance Metrics</SectionTitle>
         <MetricsGrid>
           <MetricCard>
             <MetricLabel>Current Price</MetricLabel>
-            <MetricValue>${agent.price.toFixed(7)}</MetricValue>
+            <MetricValue>{displayPrice}</MetricValue>
           </MetricCard>
           <MetricCard>
             <MetricLabel>24h Change</MetricLabel>
-            <MetricValue style={{ color: agent.priceChange24h > 0 ? '#06C755' : '#ef4444' }}>
-              {agent.priceChange24h > 0 ? '+' : ''}{agent.priceChange24h}%
+            <MetricValue style={{ color: displayChange.isPositive ? '#06C755' : '#ef4444' }}>
+              {displayChange.text}
             </MetricValue>
           </MetricCard>
           <MetricCard>
             <MetricLabel>Market Cap</MetricLabel>
-            <MetricValue>N/A</MetricValue>
+            <MetricValue>
+              {marketData && marketData.marketCap > 0 
+                ? `$${(marketData.marketCap / 1000000).toFixed(2)}M` 
+                : 'N/A'}
+            </MetricValue>
           </MetricCard>
           <MetricCard>
-            <MetricLabel>Treasury Value</MetricLabel>
-            <MetricValue>N/A</MetricValue>
+            <MetricLabel>Volume 24h</MetricLabel>
+            <MetricValue>
+              {marketData && marketData.volume24h > 0 
+                ? `$${(marketData.volume24h / 1000000).toFixed(2)}M` 
+                : 'N/A'}
+            </MetricValue>
           </MetricCard>
           <MetricCard>
             <MetricLabel>Total Supply</MetricLabel>
@@ -267,10 +310,10 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
           </MetricCard>
           <MetricCard>
             <MetricLabel>Total Burned</MetricLabel>
-            <MetricValue>N/A</MetricValue>
+            <MetricValue>{(agent.totalBurned / 1000000000).toFixed(0)}B {agent.symbol}</MetricValue>
           </MetricCard>
         </MetricsGrid>
-      </Section>*/}
+      </Section>
 
       <Section>
         <SectionTitle>Recent Activity</SectionTitle>

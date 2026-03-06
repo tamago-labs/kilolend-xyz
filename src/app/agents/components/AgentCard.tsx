@@ -83,16 +83,44 @@ const LastAction = styled.div`
 interface AgentCardProps {
   agent: AgentData;
   onClick: () => void;
+  prices?: Record<string, any>;
+  getFormattedPrice?: (symbol: string) => string;
+  getFormattedChange?: (symbol: string) => { text: string; isPositive: boolean };
+  pricesLoading?: boolean;
 }
 
-export function AgentCardComponent({ agent, onClick }: AgentCardProps) {
+export function AgentCardComponent({ 
+  agent, 
+  onClick, 
+  prices, 
+  getFormattedPrice, 
+  getFormattedChange, 
+  pricesLoading 
+}: AgentCardProps) {
+  // Get the token symbol without $ prefix for price lookup
+  const tokenSymbol = agent.symbol.replace('$', '');
+  
+  // Check if we have real price data for this token
+  const hasRealPrice = prices && prices[tokenSymbol];
+  
+  // Use real price if available, otherwise fallback to mock data or show loading
+  const displayPrice = hasRealPrice && getFormattedPrice 
+    ? getFormattedPrice(tokenSymbol) 
+    : pricesLoading 
+      ? 'Loading...' 
+      : 'N/A';
+  
+  const displayChange = hasRealPrice && getFormattedChange
+    ? getFormattedChange(tokenSymbol)
+    : { text: 'N/A', isPositive: true };
+
   return (
     <AgentCard theme={agent.theme} onClick={onClick}>
       <AgentIcon src={agent.icon} alt={agent.name} />
       <AgentName>{agent.name}</AgentName>
-      <TokenInfo>{agent.symbol} • ${agent.price.toFixed(7)}</TokenInfo>
-      <PriceChange positive={agent.priceChange24h > 0} theme={agent.theme}>
-        {agent.priceChange24h > 0 ? '+' : ''}{agent.priceChange24h}% (24h)
+      <TokenInfo>{agent.symbol} • {displayPrice}</TokenInfo>
+      <PriceChange positive={displayChange.isPositive} theme={agent.theme}>
+        {displayChange.text} (24h)
       </PriceChange>
       {/*<ChainSection>
         <ChainLabel>Available on:</ChainLabel>

@@ -152,6 +152,18 @@ const MaxButton = styled.button`
   }
 `;
 
+const USDDisplay = styled.div`
+  font-size: 12px;
+  color: #374151;
+  margin-top: 2px;
+  font-weight: 500;
+`;
+
+const LoadingPlaceholder = styled.span`
+  color: #9ca3af;
+  font-style: italic;
+`;
+
 const ChevronIcon = styled(ChevronDown)<{ disabled?: boolean }>`
   width: 16px;
   height: 16px;
@@ -260,6 +272,10 @@ interface DesktopSwapInputProps {
   showTokenSelector?: boolean;
   availableTokens?: any[];
   onTokenSelect?: (token: any) => void;
+  // USD price props
+  usdValue?: number | null;
+  getFormattedUSDValue?: (amount: string, tokenSymbol: string) => string;
+  pricesLoading?: boolean;
 }
 
 export const DesktopSwapInput = ({
@@ -273,7 +289,11 @@ export const DesktopSwapInput = ({
   placeholder = "0.00",
   showTokenSelector = false,
   availableTokens = [],
-  onTokenSelect
+  onTokenSelect,
+  // USD price props
+  usdValue,
+  getFormattedUSDValue,
+  pricesLoading
 }: DesktopSwapInputProps) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -364,6 +384,19 @@ export const DesktopSwapInput = ({
             <MaxButton onClick={handleMaxClick}>MAX</MaxButton>
           )}
         </BalanceDisplay>
+        
+        {/* USD Value Display */}
+        {amount && amount !== '0' && (
+          <USDDisplay>
+            {pricesLoading ? (
+              <LoadingPlaceholder>Loading price...</LoadingPlaceholder>
+            ) : usdValue !== null && usdValue !== undefined ? (
+              `≈ $${usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            ) : (
+              <LoadingPlaceholder>Price unavailable</LoadingPlaceholder>
+            )}
+          </USDDisplay>
+        )}
       </InputSection>
 
       <DesktopBaseModal

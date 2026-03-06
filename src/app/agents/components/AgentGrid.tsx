@@ -12,9 +12,20 @@ const AgentGrid = styled.div`
 interface AgentGridProps {
   agents: AgentData[];
   onAgentClick: (agent: AgentData) => void;
+  prices?: Record<string, any>;
+  getFormattedPrice?: (symbol: string) => string;
+  getFormattedChange?: (symbol: string) => { text: string; isPositive: boolean };
+  pricesLoading?: boolean;
 }
 
-export function AgentGridComponent({ agents, onAgentClick }: AgentGridProps) {
+export function AgentGridComponent({ 
+  agents, 
+  onAgentClick, 
+  prices, 
+  getFormattedPrice, 
+  getFormattedChange, 
+  pricesLoading 
+}: AgentGridProps) {
   return (
     <AgentGrid>
       {agents.map(agent => (
@@ -22,6 +33,10 @@ export function AgentGridComponent({ agents, onAgentClick }: AgentGridProps) {
           key={agent.id}
           agent={agent}
           onClick={() => onAgentClick(agent)}
+          prices={prices}
+          getFormattedPrice={getFormattedPrice}
+          getFormattedChange={getFormattedChange}
+          pricesLoading={pricesLoading}
         />
       ))}
     </AgentGrid>

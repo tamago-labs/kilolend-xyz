@@ -73,6 +73,13 @@ export const KAIA_TOKENS = {
     address: '0xD068c52d81f4409B9502dA926aCE3301cc41f623',
     isNative: false,
   },
+  KLAW: {
+    symbol: 'KLAW',
+    name: 'KlawSter',
+    decimals: 18,
+    address: '0xd145a1f18c5edc9cee0994e6a8e2eb9dd0a40cb6',
+    isNative: false,
+  },
 } as const;
 
 export type KAIATokenKey = keyof typeof KAIA_TOKENS;

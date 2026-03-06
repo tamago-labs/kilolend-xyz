@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { AgentGridComponent } from './components/AgentGrid';
 import { AgentModal } from './components/AgentModal';
 import { agentsData, AgentData } from './components/AgentData';
+import { usePriceUpdates } from '@/hooks/usePriceUpdates';
+import { PRICE_API_CONFIG } from '@/utils/tokenConfig';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -37,6 +39,14 @@ export default function AgentsPage() {
   const [selectedAgent, setSelectedAgent] = useState<AgentData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Extract agent token symbols (remove $ prefix) for price lookup
+  const agentSymbols = agentsData.map(agent => agent.symbol.replace('$', ''));
+  
+  // Get prices for agent tokens we have API data for
+  const { prices, getFormattedPrice, getFormattedChange, isLoading: pricesLoading } = usePriceUpdates({
+    symbols: [...agentSymbols, ...PRICE_API_CONFIG.supportedTokens]
+  });
+
   const handleAgentClick = (agent: AgentData) => {
     setSelectedAgent(agent);
     setIsModalOpen(true);
@@ -58,6 +68,10 @@ export default function AgentsPage() {
         <AgentGridComponent 
           agents={agentsData} 
           onAgentClick={handleAgentClick}
+          prices={prices}
+          getFormattedPrice={getFormattedPrice}
+          getFormattedChange={getFormattedChange}
+          pricesLoading={pricesLoading}
         />
       </MainContent>
 
@@ -66,6 +80,10 @@ export default function AgentsPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           agent={selectedAgent}
+          prices={prices}
+          getFormattedPrice={getFormattedPrice}
+          getFormattedChange={getFormattedChange}
+          pricesLoading={pricesLoading}
         />
       )}
     </Container>

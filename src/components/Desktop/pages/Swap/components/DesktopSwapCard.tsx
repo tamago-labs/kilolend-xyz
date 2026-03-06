@@ -65,6 +65,14 @@ interface DesktopSwapCardProps {
   availableTokens?: any[];
   onFromTokenSelect?: (token: any) => void;
   onToTokenSelect?: (token: any) => void;
+  // USD price props
+  prices?: Record<string, any>;
+  getFormattedPrice?: (symbol: string) => string;
+  getFormattedUSDValue?: (amount: string, tokenSymbol: string) => string;
+  fromUSDValue?: number | null;
+  toUSDValue?: number | null;
+  minimumReceivedUSD?: number | null;
+  pricesLoading?: boolean;
 }
 
 export const DesktopSwapCard = ({
@@ -83,7 +91,15 @@ export const DesktopSwapCard = ({
   onApprove,
   availableTokens = [],
   onFromTokenSelect,
-  onToTokenSelect
+  onToTokenSelect,
+  // USD price props
+  prices,
+  getFormattedPrice,
+  getFormattedUSDValue,
+  fromUSDValue,
+  toUSDValue,
+  minimumReceivedUSD,
+  pricesLoading
 }: DesktopSwapCardProps) => {
 
   // Get token balances
@@ -128,6 +144,9 @@ export const DesktopSwapCard = ({
           showTokenSelector={true}
           availableTokens={availableTokens}
           onTokenSelect={onFromTokenSelect}
+          usdValue={fromUSDValue}
+          getFormattedUSDValue={getFormattedUSDValue}
+          pricesLoading={pricesLoading}
         />
       </SwapSection>
 
@@ -152,6 +171,9 @@ export const DesktopSwapCard = ({
           showTokenSelector={true}
           availableTokens={availableTokens}
           onTokenSelect={onToTokenSelect}
+          usdValue={toUSDValue}
+          getFormattedUSDValue={getFormattedUSDValue}
+          pricesLoading={pricesLoading}
         />
       </SwapSection>
 
@@ -160,6 +182,9 @@ export const DesktopSwapCard = ({
           quote={quote}
           fromTokenSymbol={fromTokenInfo?.symbol || ''}
           toTokenSymbol={toTokenInfo?.symbol || ''}
+          minimumReceivedUSD={minimumReceivedUSD}
+          getFormattedUSDValue={getFormattedUSDValue}
+          pricesLoading={pricesLoading}
         />
       )}
 

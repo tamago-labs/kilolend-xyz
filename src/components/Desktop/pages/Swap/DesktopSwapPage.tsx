@@ -14,6 +14,8 @@ import { DesktopKYCWarning } from './components/DesktopKYCWarning';
 import { useDEXQuoteV2 } from '@/hooks/useDEXQuoteV2';
 import { useDEXSwapV2 } from '@/hooks/useDEXSwapV2';
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePriceUpdates } from '@/hooks/usePriceUpdates';
+import { PRICE_API_CONFIG } from '@/utils/tokenConfig';
 import { CHAIN_DEX_TOKENS, CHAIN_CONFIGS, CHAIN_CONTRACTS } from '@/utils/chainConfig';
 import { useAuth } from '@/contexts/ChainContext';
 import { ChainId } from '@/utils/chainConfig';
@@ -77,6 +79,12 @@ export const DesktopSwap = () => {
   const { selectedAuthMethod } = useAuth();
   const { getQuote, isLoading: isQuoteLoading, error: quoteError, isSupportedChain, currentChain, availableTokens } = useDEXQuoteV2();
   const { approveToken, executeSwap, isLoading: isSwapLoading, error: swapError } = useDEXSwapV2();
+
+  // Get prices for available tokens
+  const tokenSymbols = availableTokens.map((t: any) => t.symbol);
+  const { prices, getFormattedPrice, getFormattedChange, isLoading: pricesLoading } = usePriceUpdates({
+    symbols: ["USDT", ...tokenSymbols]
+  });
 
   const [selectedChain, setSelectedChain] = useState<ChainId>('kaia'); // Default to KAIA for LINE SDK
   const [fromToken, setFromToken] = useState<string>('');
@@ -212,6 +220,24 @@ export const DesktopSwap = () => {
     }
   };
 
+  // USD calculation functions
+  const getUSDValue = (amount: string, tokenSymbol: string): number | null => {
+    if (!amount || !prices[tokenSymbol]) return null;
+    const tokenPrice = prices[tokenSymbol].price;
+    return parseFloat(amount) * tokenPrice;
+  };
+
+  const getFormattedUSDValue = (amount: string, tokenSymbol: string): string => {
+    const usdValue = getUSDValue(amount, tokenSymbol);
+    if (usdValue === null) return 'N/A';
+    return `$${usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Calculate USD values for current swap
+  const fromUSDValue = getUSDValue(amount, fromTokenConfig.symbol);
+  const toUSDValue = quote ? getUSDValue(quote.amountOut, toTokenConfig.symbol) : null;
+  const minimumReceivedUSD = quote ? getUSDValue(quote.minimumReceived, toTokenConfig.symbol) : null;
+
   return (
     <SwapContainer>
       <MainContent>
@@ -240,6 +266,14 @@ export const DesktopSwap = () => {
               availableTokens={availableTokens}
               onFromTokenSelect={handleFromTokenSelect}
               onToTokenSelect={handleToTokenSelect}
+              // USD price props
+              prices={prices}
+              getFormattedPrice={getFormattedPrice}
+              getFormattedUSDValue={getFormattedUSDValue}
+              fromUSDValue={fromUSDValue}
+              toUSDValue={toUSDValue}
+              minimumReceivedUSD={minimumReceivedUSD}
+              pricesLoading={pricesLoading}
             />
 
             <DesktopSwapErrorMessage

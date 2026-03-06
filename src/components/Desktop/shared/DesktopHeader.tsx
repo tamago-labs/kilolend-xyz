@@ -599,7 +599,7 @@ export const DesktopHeader = () => {
           </GetSkillsButton>
           {!account ? (
             <ConnectButton onClick={() => openModal('walletConnection')}>
-              <ConnectIcon />
+              {/*<ConnectIcon />*/}
               Connect
             </ConnectButton>
           ) : (

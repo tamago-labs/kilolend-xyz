@@ -63,16 +63,28 @@ const GasIcon = styled.span`
   font-size: 14px;
 `;
 
+const USDDisplay = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+`;
+
 interface DesktopSwapQuoteProps {
   quote: any;
   fromTokenSymbol: string;
   toTokenSymbol: string;
+  minimumReceivedUSD?: number | null;
+  getFormattedUSDValue?: (amount: string, tokenSymbol: string) => string;
+  pricesLoading?: boolean;
 }
 
 export const DesktopSwapQuote = ({
   quote,
   fromTokenSymbol,
-  toTokenSymbol
+  toTokenSymbol,
+  minimumReceivedUSD,
+  getFormattedUSDValue,
+  pricesLoading
 }: DesktopSwapQuoteProps) => {
   
   const formatNumber = (num: number, decimals: number = 4) => {
@@ -108,22 +120,21 @@ export const DesktopSwapQuote = ({
 
       <QuoteRow>
         <QuoteLabel>Minimum Received</QuoteLabel>
-        <QuoteValue highlighted>
-          {formatNumber(quote.minimumReceived)} {toTokenSymbol}
-        </QuoteValue>
-      </QuoteRow>
-
+        <div>
+          <QuoteValue highlighted>
+            {formatNumber(quote.minimumReceived)} {toTokenSymbol}
+          </QuoteValue>
+          {minimumReceivedUSD !== null && minimumReceivedUSD !== undefined && (
+            <USDDisplay>
+              ≈ ${minimumReceivedUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </USDDisplay>
+          )}
+        </div>
+      </QuoteRow> 
       <QuoteRow>
         <QuoteLabel>Slippage Tolerance</QuoteLabel>
         <QuoteValue>5.00%</QuoteValue>
-      </QuoteRow>
-
-     {/* {quote.gasEstimate && (
-        <GasEstimate>
-          <GasIcon>⛽</GasIcon>
-          Estimated gas: {quote.gasEstimate.toLocaleString()} units
-        </GasEstimate>
-      )}*/}
+      </QuoteRow> 
     </QuoteContainer>
   );
 };
