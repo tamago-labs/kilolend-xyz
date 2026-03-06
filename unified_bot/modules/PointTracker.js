@@ -129,17 +129,8 @@ class PointTracker extends BaseModule {
       },
       
       reset() {
-        // Store base TVL data before resetting to preserve it across day changes
-        const baseTVLStorage = {};
-        for (const [user, stats] of Object.entries(this.dailyStats.userStats)) {
-          if (stats.baseTVL > 0) { // FIXED: Removed balanceBreakdown condition
-            baseTVLStorage[user] = {
-              baseTVL: stats.baseTVL
-            };
-          }
-        }
-        
-        // Reset all daily stats
+        // CRITICAL FIX: Don't preserve any user data here - let reinitializeExistingUsers() handle everything
+        // This ensures ALL users from database (including new users) are loaded, not just those in memory
         this.dailyStats = {
           users: new Set(),
           totalEvents: 0,
@@ -150,12 +141,8 @@ class PointTracker extends BaseModule {
           borrowChanges: {}
         };
         
-        // Restore base TVL data for users who had it
-        for (const [user, data] of Object.entries(baseTVLStorage)) {
-          this.initializeUserBaseTVL(user, data.baseTVL, {});
-        }
-        
-        return baseTVLStorage;
+        // Return empty to signal that complete reinitialization is needed
+        return {};
       },
       
       initializeUserStats(userAddress) {
@@ -239,7 +226,8 @@ class PointTracker extends BaseModule {
         const currentDate = this.getCurrentDate();
         if (currentDate !== this.currentDate) {
           this.currentDate = currentDate;
-          this.reset(); // Reset daily stats when a new day starts
+          // FIXED: Remove premature reset() call - only signal day change like old version
+          // Let printDailySummary() handle the actual reset and user reloading
           return true; // Signal that a new day started
         }
 
@@ -282,7 +270,8 @@ class PointTracker extends BaseModule {
           this.reset();
           dayChanged = true;
           
-          // Re-initialize existing users after day reset to ensure all database users are tracked
+          // CRITICAL FIX: Reinitialize ALL users from database after day reset
+          // This ensures new users who haven't had activity are still tracked
           if (databaseService && balanceManager) {
             await this.reinitializeExistingUsers(databaseService, balanceManager);
           }
@@ -372,15 +361,16 @@ class PointTracker extends BaseModule {
       },
       
       /**
-       * Re-initialize existing users after daily reset
-       * Ensures users with base TVL are tracked even without daily activity
+       * CRITICAL FIX: Re-initialize ALL existing users after daily reset
+       * This ensures users with base TVL are tracked even without daily activity
+       * Most importantly, this loads ALL users from database, not just those in memory
        */
       async reinitializeExistingUsers(databaseService, balanceManager) {
         try {
           console.log('\n🔄 RE-INITIALIZING USERS AFTER DAILY RESET...');
           console.log('==========================================');
           
-          // Get all users from the database
+          // Get ALL users from the database (including new users who haven't had activity)
           const allUsers = await databaseService.getAllUsers();
           
           if (allUsers.length === 0) {
@@ -390,10 +380,10 @@ class PointTracker extends BaseModule {
           
           console.log(`🚀 Found ${allUsers.length} existing users, re-calculating base TVL...`);
           
-          // Calculate base TVL for all existing users
+          // Calculate base TVL for ALL existing users
           const existingUserBaseTVL = await balanceManager.calculateBaseTVLForUsers(allUsers);
           
-          // Re-initialize stats manager with existing users' base TVL
+          // Re-initialize stats manager with ALL existing users' base TVL
           let usersWithTVL = 0;
           let usersWithZeroTVL = 0;
           let usersWithErrors = 0;
@@ -446,14 +436,8 @@ class PointTracker extends BaseModule {
     // Use the new PriceManager service
     this.priceManagers[this.chainId] = new PriceManager(`${apiBaseUrl}/prices`);
     
-    // Balance manager (simplified)
-    this.balanceManagers[this.chainId] = {
-      async calculateTVLForUser(userAddress) {
-        // This would need to be implemented with actual balance queries
-        // For now, return 0 as placeholder
-        return 0;
-      }
-    };
+    // Balance manager - will be properly initialized in initializeExistingUsers()
+    this.balanceManagers[this.chainId] = null;
     
     // KILO Point Calculator
     this.kiloCalculator = new KiloPointCalculator(this.dailyKiloDistribution);
@@ -468,7 +452,7 @@ class PointTracker extends BaseModule {
     try {
       this.log('Initializing existing users...', 'info');
       
-      // Fetch all users from the API
+      // Fetch ALL users from the API
       const allUsers = await this.databaseService.getAllUsers();
       
       if (allUsers.length === 0) {
@@ -481,6 +465,9 @@ class PointTracker extends BaseModule {
       // Initialize BalanceManager with provider and markets
       const provider = this.chainManager.getProvider(this.chainId);
       this.balanceManager = new BalanceManager(provider, this.markets);
+      
+      // Also store it in balanceManagers for consistency
+      this.balanceManagers[this.chainId] = this.balanceManager;
       
       // Calculate base TVL for all existing users
       const existingUserBaseTVL = await this.balanceManager.calculateBaseTVLForUsers(allUsers);
