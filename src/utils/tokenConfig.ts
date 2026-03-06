@@ -39,6 +39,14 @@ export const KAIA_MAINNET_TOKENS = {
     decimals: 18,
     icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/18895.png',
     iconType: 'image' as const
+  },
+  KLAW: {
+    address: '0xd145a1f18c5edc9cee0994e6a8e2eb9dd0a40cb6',
+    name: 'KlawSter',
+    symbol: 'KLAW',
+    decimals: 18,
+    icon: 'images/token-icons/klaw-icon.png',
+    iconType: 'image' as const
   }
 } as const;
 
