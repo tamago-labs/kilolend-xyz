@@ -122,15 +122,14 @@ export function AgentCardComponent({
       <PriceChange positive={displayChange.isPositive} theme={agent.theme}>
         {displayChange.text} (24h)
       </PriceChange>
-      {/*<ChainSection>
-        <ChainLabel>Available on:</ChainLabel>
+      <ChainSection> 
         <ChainIcons>
           {agent.chains.map(chain => (
             <ChainIcon key={chain.name} src={chain.icon} alt={chain.name} />
           ))}
         </ChainIcons>
-      </ChainSection>*/}
-      <LastAction>Last Action: {agent.lastAction}</LastAction>
+      </ChainSection>
+      {/*<LastAction>Last Action: {agent.lastAction}</LastAction>*/}
     </AgentCard>
   );
 }

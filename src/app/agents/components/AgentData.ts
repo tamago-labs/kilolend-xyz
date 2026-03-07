@@ -37,8 +37,7 @@ export const agentsData: AgentData[] = [
     priceChange24h: 5.2,
     icon: '/images/token-icons/klaw-icon.png',
     chains: [
-      { name: 'kaia', icon: '/images/blockchain-icons/kaia-token-icon.png' },
-      { name: 'kub', icon: '/images/blockchain-icons/kub-chain-icon.png' }
+      { name: 'kaia', icon: '/images/blockchain-icons/kaia-token-icon.png' }
     ],
     lastAction: '2 minutes ago',
     marketCap: 1250000,
@@ -70,8 +69,7 @@ export const agentsData: AgentData[] = [
     price: 0.0000001,
     priceChange24h: 0.0,
     icon: '/images/token-icons/mantis-icon.png',
-    chains: [
-      { name: 'kaia', icon: '/images/blockchain-icons/kaia-token-icon.png' },
+    chains: [ 
       { name: 'kub', icon: '/images/blockchain-icons/kub-chain-icon.png' }
     ],
     lastAction: 'N/A',
@@ -105,8 +103,7 @@ export const agentsData: AgentData[] = [
     priceChange24h: 0.0,
     icon: '/images/token-icons/baby-icon.png',
     chains: [
-      { name: 'kaia', icon: '/images/blockchain-icons/kaia-token-icon.png' },
-      { name: 'kub', icon: '/images/blockchain-icons/kub-chain-icon.png' }
+      { name: 'celo', icon: '/images/blockchain-icons/celo-icon.png' }
     ],
     lastAction: 'N/A',
     marketCap: 2170000,
