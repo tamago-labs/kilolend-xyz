@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useCallback } from 'react';
-import { Cpu, Loader, ChevronRight, Info, Plus } from 'react-feather';
+import React, { useCallback, useState } from 'react';
+import { Cpu, Loader, ChevronRight, Info, Plus, Copy } from 'react-feather';
 import { AIWalletStatus } from '@/services/aiWalletService';
 import { useAITokenBalancesV2 } from '@/hooks/v2/useAITokenBalancesV2';
 import { useTokenBalancesV2 } from '@/hooks/useTokenBalancesV2';
 import { usePriceUpdates } from '@/hooks/usePriceUpdates';
+import { useDesktopInteractions } from '@/components/Desktop/modals/DesktopAIChatPanel/hooks/useDesktopInteractions';
+import styled from 'styled-components';
 import {
   ContentCard,
   CardHeader,
@@ -27,7 +29,71 @@ import {
   TokenUSD,
   Button,
 } from '../DesktopAgentWalletsV2Page.styles';
-import { getTokenIcon } from "@/utils/chainConfig"
+import { KAIA_MAINNET_TOKENS } from '@/utils/tokenConfig';
+
+// Enhanced styled components for wallet address card
+const WalletAddressCard = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #06C755;
+    box-shadow: 0 2px 8px rgba(6, 199, 85, 0.1);
+  }
+`;
+
+const AddressInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+`;
+
+const AddressLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+`;
+
+const AddressText = styled.div`
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #1e293b;
+  word-break: break-all;
+  line-height: 1.4;
+`;
+
+const CopyButton = styled.button<{ $copied?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: ${({ $copied }) => $copied ? '#06C755' : 'white'};
+  color: ${({ $copied }) => $copied ? 'white' : '#1e293b'};
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${({ $copied }) => $copied ? '#059669' : '#f8fafc'};
+    border-color: #06C755;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
 
 interface BalanceContentProps {
   selectedChain: number;
@@ -45,6 +111,44 @@ const CHAINS = [
   { id: 42793, name: 'Etherlink', icon: '/images/blockchain-icons/etherlink-icon.png' },
 ];
 
+// Enhanced getTokenIcon function matching the Portfolio implementation
+const getEnhancedTokenIcon = (symbol: string) => {
+  if (symbol === 'KAIA') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/32880.png';
+  }
+  if (symbol === 'KUB' || symbol === 'KKUB') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/16093.png';
+  }
+  if (symbol === 'KUSDT') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png';
+  }
+  if (symbol === 'XTZ') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/2011.png';
+  }
+  if (symbol === 'WXTZ') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/35930.png';
+  }
+  if (symbol === 'USDC') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png';
+  }
+  if (symbol === 'KLAW') {
+    return '/images/token-icons/klaw-icon.png';
+  }
+  if (symbol === 'SIX') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/3327.png';
+  }
+  if (symbol === 'BORA') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/3801.png';
+  }
+  if (symbol === 'MBX') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/18895.png';
+  }
+  if (symbol === 'stKAIA') {
+    return 'https://assets.coingecko.com/coins/images/40001/standard/token_stkaia.png';
+  }
+  const tokenConfig = KAIA_MAINNET_TOKENS[symbol as keyof typeof KAIA_MAINNET_TOKENS];
+  return tokenConfig?.icon || 'https://s2.coinmarketcap.com/static/img/coins/64x64/32880.png';
+};
 
 export const BalanceContent: React.FC<BalanceContentProps> = ({
   selectedChain,
@@ -55,6 +159,9 @@ export const BalanceContent: React.FC<BalanceContentProps> = ({
   onCreateAIWallet,
   aiWalletError
 }) => {
+  const [copied, setCopied] = useState(false);
+  const { copyToClipboard } = useDesktopInteractions();
+
   // Fetch AI wallet balances
   const { isLoading: isLoadingBalances, getBalancesByChain } = useAITokenBalancesV2(
     aiWalletData?.aiWalletAddress || null
@@ -65,7 +172,7 @@ export const BalanceContent: React.FC<BalanceContentProps> = ({
 
   // Fetch prices for base tokens only (pegged tokens use the same price)
   const { prices } = usePriceUpdates({
-    symbols: ["KAIA", "USDT", "stKAIA", "MBX", "BORA", "SIX", "XTZ", "KUB"]
+    symbols: ["KAIA", "USDT", "stKAIA", "MBX", "BORA", "SIX", "XTZ", "KUB", "KLAW"]
   });
 
   // Helper function to get price for a token symbol
@@ -118,6 +225,17 @@ export const BalanceContent: React.FC<BalanceContentProps> = ({
     const parsedBalance = parseFloat(balance || '0');
     return price * parsedBalance;
   }, [getTokenPrice]);
+
+  // Handle copy address functionality
+  const handleCopyAddress = useCallback(async () => {
+    if (!aiWalletData?.aiWalletAddress) return;
+    
+    const success = await copyToClipboard(aiWalletData.aiWalletAddress, 'Address copied to clipboard!');
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [aiWalletData?.aiWalletAddress, copyToClipboard]);
 
   // Get balances for the selected chain
   const chainBalances = getBalancesByChain(selectedChain);
@@ -351,6 +469,23 @@ export const BalanceContent: React.FC<BalanceContentProps> = ({
         </BalanceCard>
       </BalanceGrid>
 
+      {/* AI Wallet Address Card */}
+      {aiWalletData?.aiWalletAddress && (
+        <WalletAddressCard>
+          <AddressInfo>
+            <AddressLabel>Agent Wallet Address</AddressLabel>
+            <AddressText>{aiWalletData.aiWalletAddress}</AddressText>
+          </AddressInfo>
+          <CopyButton 
+            $copied={copied} 
+            onClick={handleCopyAddress}
+          >
+            <Copy size={16} />
+            {copied ? 'Copied!' : 'Copy'}
+          </CopyButton>
+        </WalletAddressCard>
+      )}
+
       <ContentCard>
         <CardHeader>
           <CardTitle>Token Holdings</CardTitle>
@@ -380,7 +515,17 @@ export const BalanceContent: React.FC<BalanceContentProps> = ({
           nonZeroBalances.map((token, index) => (
             <TokenRow key={index}>
               <TokenInfo>
-                <TokenIcon src={getTokenIcon(token.symbol) || '/images/icon-token.png'} alt={token.symbol} />
+                <TokenIcon 
+                  src={getEnhancedTokenIcon(token.symbol)} 
+                  alt={token.symbol}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    if (img.parentElement) {
+                      img.parentElement.innerHTML = `<span style="font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #f1f5f9; border-radius: 50%; color: #64748b;">${token.symbol.charAt(0)}</span>`;
+                    }
+                  }}
+                />
                 <TokenDetails>
                   <TokenSymbol>{token.symbol}</TokenSymbol>
                   <TokenName>{token.name}</TokenName>

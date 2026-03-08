@@ -389,10 +389,10 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
 
           <CTAContainer>
             <PrimaryButton onClick={() => router.push('/markets')}>
-              Use as Human
+              Access Platform
             </PrimaryButton>
-            <SecondaryButton onClick={onAIAgent || onTryDesktop}>
-              Use as AI-Agent
+            <SecondaryButton onClick={() => window.open('https://discord.gg/BDQnjcHbnj', '_blank', 'noopener,noreferrer')}>
+              Meet AI Agents
             </SecondaryButton>
           </CTAContainer>
 

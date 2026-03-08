@@ -26,6 +26,7 @@ export interface AgentData {
     time: string;
   }>;
   statusBadge: string;
+  discordLink?: string;
 }
 
 export const agentsData: AgentData[] = [
@@ -60,7 +61,8 @@ export const agentsData: AgentData[] = [
       { text: 'New strategy activated: Momentum trading', time: 'Just now' },
       { text: 'Borrowed capital: 500 KUB for new position', time: '5 minutes ago' }
     ],
-    statusBadge: 'Active'
+    statusBadge: 'Active',
+    discordLink: 'https://discord.gg/BDQnjcHbnj'
   },
   {
     id: 'mantis',

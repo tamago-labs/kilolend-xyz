@@ -184,6 +184,7 @@ export const DesktopFooter = () => {
           <SectionTitle>Community</SectionTitle>
           <FooterLink href="https://x.com/kilolend_xyz" target="_blank" rel="noopener noreferrer">Twitter/X</FooterLink>
           <FooterLink href="https://lin.ee/r8bOhDU" target="_blank" rel="noopener noreferrer">LINE Official</FooterLink>
+          <FooterLink href="https://discord.gg/BDQnjcHbnj" target="_blank" rel="noopener noreferrer">Discord</FooterLink>
           <FooterLink href="https://github.com/tamago-labs/kilolend" target="_blank" rel="noopener noreferrer">GitHub</FooterLink>
         </FooterSection>
 

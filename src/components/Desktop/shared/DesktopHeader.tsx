@@ -588,6 +588,15 @@ export const DesktopHeader = () => {
                 >
                   Documentation
                 </NavDropdownItem>
+                <NavDropdownItem
+                  className={''}
+                  onClick={() => {
+                    window.open('https://discord.gg/BDQnjcHbnj', '_blank', 'noopener,noreferrer');
+                    setShowNavDropdown(false);
+                  }}
+                >
+                  Discord
+                </NavDropdownItem>
               </NavDropdownMenu>
             </NavDropdownContainer>
           </Navigation>

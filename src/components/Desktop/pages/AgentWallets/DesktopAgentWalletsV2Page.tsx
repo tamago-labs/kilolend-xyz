@@ -129,9 +129,7 @@ export const DesktopAgentWalletsV2Page = () => {
     { id: 'deposit' as TabType, label: 'Deposit' },
     { id: 'withdraw' as TabType, label: 'Withdraw' }, 
     { id: 'apikeys' as TabType, label: 'API Keys' },
-    { id: 'activity' as TabType, label: 'Activity Log' },
-    // { id: 'skills' as TabType, label: 'Agent Skills' },
-    // { id: 'security' as TabType, label: 'Security & Limits' },
+    { id: 'activity' as TabType, label: 'Activity Log' }
   ];
 
   const renderContent = () => {

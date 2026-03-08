@@ -379,10 +379,7 @@ export const DepositContent: React.FC<DepositContentProps> = ({ aiWalletData, is
                 fontSize: '12px'
               }}>
                 {aiWalletData.aiWalletAddress}
-              </div>
-             {/* <div style={{ marginTop: '8px', fontSize: '12px' }}>
-                Auth Method: {selectedAuthMethod === 'line_sdk' ? 'LINE SDK' : 'Web3 Wallet'}
-              </div>*/}
+              </div> 
             </div>
           )}
         </FormContainer>
