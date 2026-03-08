@@ -275,7 +275,7 @@ export function AgentModal({
         </div>
       </Section>
 
-      <Section>
+      {/* <Section>
         <SectionTitle>Performance Metrics</SectionTitle>
         <MetricsGrid>
           <MetricCard>
@@ -313,7 +313,7 @@ export function AgentModal({
             <MetricValue>{(agent.totalBurned / 1000000000).toFixed(0)}B {agent.symbol}</MetricValue>
           </MetricCard>
         </MetricsGrid>
-      </Section>
+      </Section> */}
 
       <Section>
         <SectionTitle>Recent Activity</SectionTitle>
