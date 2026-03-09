@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChain } from '@/contexts/ChainContext';
-import { etherlink } from '@/wagmi_config';
 import { Plus } from 'react-feather';
 
 // Hero Section Styles
@@ -206,13 +205,23 @@ const PhoneScreen = styled.div`
   position: relative;
 `;
 
-const LINEHeader = styled.div`
-  background: #00B900;
+const KlawsterHeader = styled.div`
+  background: linear-gradient(135deg, #06C755 0%, #059669 100%);
   color: white;
   padding: 16px;
   text-align: center;
   font-weight: 600;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+`;
+
+const KlawsterIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
 `;
 
 const ChatInterface = styled.div`
@@ -231,17 +240,10 @@ const AIResponse = styled.div`
   align-self: flex-start;
 `;
 
-const AIIcon = styled.div<{ $delay?: number }>`
+const AIIcon = styled.img<{ $delay?: number }>`
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #06C755 0%, #059669 100%);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
   opacity: 0;
   animation: fadeInUp 0.6s ease-out forwards;
   animation-delay: ${({ $delay }) => $delay}s;
@@ -284,69 +286,13 @@ const AnimatedChatBubble = styled.div<{ $isUser?: boolean; $delay?: number }>`
   }
 `;
 
-const LoadingDots = styled.div<{ $delay?: number; $duration?: number }>`
-  display: flex;
-  gap: 4px;
-  padding: 12px 16px;
-  opacity: 0;
-  animation: fadeInUp 0.6s ease-out forwards, fadeOut 0.6s ease-out forwards;
-  animation-delay: ${({ $delay }) => $delay}s, ${({ $duration, $delay }) => ($delay || 0) + ($duration || 2)}s;
-
-  &::after {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    background: #06C755;
-    border-radius: 50%;
-    animation: loading 1.4s infinite ease-in-out both;
-  }
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    background: #06C755;
-    border-radius: 50%;
-    animation: loading 1.4s infinite ease-in-out both;
-    animation-delay: -0.32s;
-  }
-
-  span {
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    background: #06C755;
-    border-radius: 50%;
-    animation: loading 1.4s infinite ease-in-out both;
-    animation-delay: -0.16s;
-  }
-
-  @keyframes loading {
-    0%, 80%, 100% {
-      transform: scale(0);
-    }
-    40% {
-      transform: scale(1);
-    }
-  }
-
-  @keyframes fadeOut {
-    to {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-  }
-`;
 
 // Mobile Mockup Styles - defined after PhoneFrame to avoid hoisting issues
 const MobileMockup = styled.div`
   position: relative;
   display: flex;
   justify-content: center;
-  align-items: center;
-  cursor: pointer;
+  align-items: center; 
   transition: all 0.3s ease;
 
   &:hover {
@@ -364,9 +310,8 @@ interface HeroSectionProps {
   onAIAgent?: () => void;
 }
 
-export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSectionProps) => {
+export const HeroSection = () => {
   const router = useRouter();
-  const { selectedChain } = useChain();
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
 
   const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdSdDIX5OCCHnc2LbKF4j7rfzQEJmsIEhusTK5r6P_XCgYRLw/viewform?usp=dialog';
@@ -477,60 +422,67 @@ export const HeroSection = ({ onGetStarted, onTryDesktop, onAIAgent }: HeroSecti
 
         </HeroContent>
 
-        <MobileMockup onClick={onGetStarted}>
+        <MobileMockup>
           <PhoneFrame>
             <PhoneScreen>
-              <LINEHeader>KiloLend on LINE</LINEHeader>
+              <KlawsterHeader>
+                <KlawsterIcon src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                $KLAW Discord Channel
+              </KlawsterHeader>
               <ChatInterface>
-                {/* Welcome Message */}
+                {/* Initial Price Display */}
                 <AIResponse>
-                  <AIIcon $delay={0}>🐍</AIIcon>
+                  <AIIcon $delay={0} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
                   <AnimatedChatBubble $isUser={false} $delay={0}>
-                    🐍 Welcome! I'm Sly, your DeFi Co-Pilot. Ready to earn some yield? 🚀
+                    $KLAW Price: $0.006530
                   </AnimatedChatBubble>
                 </AIResponse>
 
-                {/* Sly's Initial Greeting */}
+                {/* Initial Operations */}
                 <AIResponse>
-                  <AIIcon $delay={2}>🐍</AIIcon>
-                  <AnimatedChatBubble $isUser={false} $delay={2}>
-                    🐍 Let's strike! Supply USDT to earn 6.1% APY! 🎯
+                  <AIIcon $delay={1} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={1}>
+                    🔍 Scanning DeFi protocols for optimal yield...
                   </AnimatedChatBubble>
                 </AIResponse>
 
-                {/* User Action */}
-                <AnimatedChatBubble $isUser={true} $delay={4}>
-                  ok, help supply 100 USDT
-                </AnimatedChatBubble>
-
-                {/* Loading Animation */}
-                <LoadingDots $delay={5} $duration={1}>
-                  <span></span>
-                </LoadingDots>
-
-                {/* Transaction Success */}
+                {/* Auto-Supply Operation */}
                 <AIResponse>
-                  <AIIcon $delay={6}>🐍</AIIcon>
-                  <AnimatedChatBubble $isUser={false} $delay={6}>
-                    🐍 Perfect strike! You're earning $6.10 per year! 💰
+                  <AIIcon $delay={3} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={3}>
+                    💰 Auto-supplying to KiloLend protocol - 8.5% APY
                   </AnimatedChatBubble>
                 </AIResponse>
 
-                {/* User Question */}
-                <AnimatedChatBubble $isUser={true} $delay={8}>
-                  how much KAIA can I borrow?
-                </AnimatedChatBubble>
-
-                {/* Loading Animation */}
-                <LoadingDots $delay={9} $duration={1}>
-                  <span></span>
-                </LoadingDots>
-
-                {/* Borrowing Response */}
+                {/* Profitable Trade */}
                 <AIResponse>
-                  <AIIcon $delay={10}>🐍</AIIcon>
-                  <AnimatedChatBubble $isUser={false} $delay={10}>
-                    🐍 You can borrow 50 KAIA! Your health factor is strong at 2.0 🛡️
+                  <AIIcon $delay={5} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={5}>
+                    📈 Executed profitable trade: +2.3% ETH position
+                  </AnimatedChatBubble>
+                </AIResponse>
+
+                {/* Auto Buyback */}
+                <AIResponse>
+                  <AIIcon $delay={7} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={7}>
+                    🔥 Auto buyback & burn: 2,500 $KLAW removed
+                  </AnimatedChatBubble>
+                </AIResponse>
+
+                {/* Price Increase */}
+                <AIResponse>
+                  <AIIcon $delay={9} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={9}>
+                    📊 Supply reduced → Price increasing to $0.006620
+                  </AnimatedChatBubble>
+                </AIResponse>
+
+                {/* Final Value Increase */}
+                <AIResponse>
+                  <AIIcon $delay={11} src="/images/token-icons/klaw-icon.png" alt="Klawster" />
+                  <AnimatedChatBubble $isUser={false} $delay={11}>
+                    ✨ Total token value increased by 1.4%
                   </AnimatedChatBubble>
                 </AIResponse>
               </ChatInterface>

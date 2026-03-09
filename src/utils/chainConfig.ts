@@ -258,7 +258,7 @@ export const CHAIN_DEX_TOKENS = {
   kub: [
     { symbol: 'KUB', name: 'KUB', address: CHAIN_CONTRACTS.kub.KUB, isNative: true },
     { symbol: 'KKUB', name: 'Wrapped KUB', address: CHAIN_CONTRACTS.kub.KKUB, isNative: false },
-    { symbol: 'KLAW', name: 'KlawSter', address: CHAIN_CONTRACTS.kub.KLAW, isNative: false }
+    // { symbol: 'KLAW', name: 'KlawSter', address: CHAIN_CONTRACTS.kub.KLAW, isNative: false }
   ]
 } as const;
 

@@ -31,21 +31,6 @@ export const DesktopHome = () => {
     setMounted(true);
   }, []);
 
-  const handleGetStarted = () => {
-    // Open LINE mini dapp modal
-    openModal('lineMiniDApp');
-  };
-
-  const handleTryDesktop = () => {
-    router.push("/markets")
-  };
-
-  const handleAIAgent = () => {
-    const element = document.getElementById('openclaw-skills');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
  
 
   if (!mounted) return null;
@@ -53,15 +38,9 @@ export const DesktopHome = () => {
   return (
     <HomeContainer>
       <MainContent>
-        <HeroSection
-          onGetStarted={handleGetStarted}
-          onTryDesktop={handleTryDesktop}
-          onAIAgent={handleAIAgent}
-        />
+        <HeroSection />
 
-        <MarketSection
-          onGetStarted={handleGetStarted}
-        />
+        <MarketSection />
 
         <ComparisonTableSection/>
 

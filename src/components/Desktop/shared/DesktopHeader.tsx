@@ -392,7 +392,7 @@ export const DesktopHeader = () => {
   };
 
   const handleBrandClick = () => {
-    router.push('/home');
+    router.push('/');
   };
 
   const handleDisconnect = useCallback(() => {
