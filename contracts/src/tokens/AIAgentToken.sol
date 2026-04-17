@@ -105,7 +105,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @notice Grant AI agent burner role (Creator only)
      * @param aiAgent Address to grant AI agent role to
      */
-    function grantAIAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
+    function grantAiAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
         require(aiAgent != address(0), "AI agent cannot be zero address");
         _grantRole(AI_AGENT_BURNER_ROLE, aiAgent);
         emit AIAgentRoleGranted(aiAgent);
@@ -115,7 +115,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @notice Revoke AI agent burner role (Creator only)
      * @param aiAgent Address to revoke AI agent role from
      */
-    function revokeAIAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
+    function revokeAiAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
         require(aiAgent != address(0), "AI agent cannot be zero address");
         _revokeRole(AI_AGENT_BURNER_ROLE, aiAgent);
         emit AIAgentRoleRevoked(aiAgent);
@@ -126,7 +126,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @param account Address to check
      * @return True if address has AI agent role
      */
-    function isAIAgent(address account) external view returns (bool) {
+    function isAiAgent(address account) external view returns (bool) {
         return hasRole(AI_AGENT_BURNER_ROLE, account);
     }
     
