@@ -1,394 +1,402 @@
-// // SPDX-License-Identifier: BSD-3-Clause
-// pragma solidity ^0.8.10;
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity 0.8.19;
 
-// import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-// import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-// import "@kaiachain/contracts/access/Ownable.sol";
-// import "./interfaces/PriceOracle.sol";
-// import "./tokens/CErc20.sol";
-// import "./interfaces/IOraklFeedRouter.sol";
-// import "./interfaces/AggregatorV2V3Interface.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import {IOraklFeedRouter} from "./interfaces/IOraklFeedRouter.sol";
+import {AggregatorV2V3Interface} from "./interfaces/AggregatorV2V3Interface.sol";
 
+/// @title KiloPriceOracle
+/// @notice A multi-source price oracle
+///         Each instance is bound to one collateral/loan pair at construction.
+///         Supports 4 oracle sources: Fallback (admin-set), Pyth, Orakl, and BKC (Chainlink-style).
+///         Prices are fetched in USD (scaled by 1e18) and converted to Morpho's expected format.
+///
+/// Oracle modes per side (collateral / loan):
+///   0 = Fallback (admin-set USD price)
+///   1 = Pyth     (Pyth Network real-time price feed)
+///   2 = Orakl    (Orakl Network price feed)
+///   3 = BKC      (Chainlink-style aggregator, e.g. BKC Chain)
+contract KiloPriceOracle is IOracle {
+    // ──────────────────────────── Immutables ────────────────────────────
+    address public immutable LOAN_TOKEN;
+    address public immutable COLLATERAL_TOKEN;
+    uint8 public immutable LOAN_TOKEN_DECIMALS;
+    uint8 public immutable COLLATERAL_TOKEN_DECIMALS;
 
-// /**
-//  * @title KiloPriceOracle
-//  * @notice A Compound V2-compatible price oracle with multiple modes:
-//  *         - Fallback mode (default): allows admins to manually set fallback prices for testing 
-//  *           or when external feeds are unavailable.
-//  *         - Pyth mode: fetches real-time prices from the Pyth oracle network, 
-//  *           including staleness checks and decimal adjustments.
-//  *         - Orakl mode: fetches real-time prices from Orakl Network feeds
-//  *         - BKC mode: fetches real-time prices from BKC Chain's Chainlink-style aggregators
-//  *
-//  * @dev Prices are normalized to account for underlying token decimals:
-//  *      - For 18-decimal tokens: price = USD_price * 1e18
-//  *      - For 6-decimal tokens:  price = USD_price * 1e30 (1e18 * 1e12 decimal adjustment)
-//  *      - For 8-decimal tokens:  price = USD_price * 1e28 (1e18 * 1e10 decimal adjustment)
-//  */
+    // ──────────────────────────── Storage ───────────────────────────────
+    address public owner;
 
-// contract KiloPriceOracle is Ownable, PriceOracle {
-//     IPyth public pyth;
-//     IOraklFeedRouter public oraklRouter;
+    // Fallback USD prices (scaled by 1e18)
+    uint256 public collateralUsdPrice;
+    uint256 public loanUsdPrice;
+    uint256 public lastPriceUpdateTime;
 
-//     // Pyth price feeds
-//     mapping(address => bytes32) public priceFeeds;
-    
-//     // Orakl price feeds (feed names like "BTC-USDT", "AAVE-KRW")
-//     mapping(address => string) public oraklFeeds;
+    // Oracle mode per side: 0=fallback, 1=pyth, 2=orakl, 3=bkc
+    uint8 public collateralOracleMode;
+    uint8 public loanOracleMode;
 
-//     // BKC Chain aggregators (Chainlink-style price feed contracts)
-//     mapping(address => address) public bkcAggregators;
+    // External oracle contracts
+    IPyth public pyth;
+    IOraklFeedRouter public oraklRouter;
 
-//     // Oracle mode per token: 0=fallback, 1=pyth, 2=orakl, 3=bkc
-//     mapping(address => uint8) public oracleMode;
-//     mapping(address => uint256) public fallbackPrices;
+    // Pyth price feed IDs
+    bytes32 public collateralPythFeedId;
+    bytes32 public loanPythFeedId;
 
-//     // Invert mode per token (default: false)
-//     mapping(address => bool) public invertMode;
+    // Orakl feed names (e.g. "BTC-USDT", "ETH-USDT")
+    string public collateralOraklFeed;
+    string public loanOraklFeed;
 
-//     // Native cToken symbols per chain (cKAIA for Kaia, cKUB for KUB, cEtherlink for Etherlink, etc.)
-//     mapping(string => bool) public isNativeCToken;
+    // BKC / Chainlink-style aggregators
+    address public collateralBkcAggregator;
+    address public loanBkcAggregator;
 
-//     uint256 public stalenessThreshold;
+    // Configuration
+    uint256 public stalenessThreshold;
+    uint256 public constant MAX_PRICE_DEVIATION_BPS = 5000; // 50%
+    uint256 public constant PRICE_UPDATE_DELAY = 1 hours;
 
-//     mapping(address => bool) public whitelist;
+    // Invert mode per side (default: false)
+    // When true, the raw price is inverted: 1e36 / rawPrice
+    bool public collateralInvertMode;
+    bool public loanInvertMode;
 
-//     mapping(address => uint256) public lastValidPrice;
-//     uint256 public constant MAX_PRICE_DEVIATION_BPS = 2000; // 20% max change
-//     mapping(address => uint256) public lastPriceUpdateTime;
-//     uint256 public constant PRICE_UPDATE_DELAY = 1 hours;
+    // Access control
+    mapping(address => bool) public whitelist;
 
-//     uint256 public constant MIN_PRICE = 1e6;    // $0.000001
-//     uint256 public constant MAX_PRICE = 1e24;   // $1,000,000
+    // ──────────────────────────── Events ────────────────────────────────
+    event PriceUpdated(uint256 collateralUsdPrice, uint256 loanUsdPrice);
+    event WhitelistUpdated(address indexed user, bool whitelisted);
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event OracleModeSet(uint8 collateralMode, uint8 loanMode);
+    event PythFeedSet(bytes32 collateralFeedId, bytes32 loanFeedId);
+    event OraklFeedSet(string collateralFeed, string loanFeed);
+    event BkcFeedSet(address collateralAggregator, address loanAggregator);
+    event StalenessThresholdUpdated(uint256 newThreshold);
+    event PythContractSet(address indexed pythContract);
+    event OraklRouterSet(address indexed oraklRouterContract);
+    event InvertModeSet(bool collateralInvert, bool loanInvert);
 
-//     event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);
-//     event PythFeedSet(address token, bytes32 priceId);
-//     event OraklFeedSet(address token, string feedName);
-//     event BkcFeedSet(address token, address aggregator);
-//     event OracleModeSet(address token, uint8 mode);
-//     event StalenessThresholdUpdated(uint256 newThreshold);
-//     event NativeCTokenSet(string symbol, bool isNative);
+    // ──────────────────────────── Errors ────────────────────────────────
+    error NotWhitelisted();
+    error NotOwner();
+    error ZeroPrice();
+    error UpdateTooFrequent();
+    error PriceDeviationTooHigh();
+    error InvalidOracleMode();
+    error FeedNotConfigured();
+    error OracleContractNotSet();
 
-//     modifier isWhitelisted() {
-//         require(whitelist[msg.sender], "Not whitelisted");
-//         _;
-//     }
+    // ──────────────────────────── Constructor ───────────────────────────
+    constructor(
+        address loanToken,
+        address collateralToken,
+        uint256 initialCollateralUsdPrice,
+        uint256 initialLoanUsdPrice,
+        uint8 loanTokenDecimals,
+        uint8 collateralTokenDecimals
+    ) {
+        owner = msg.sender;
+        whitelist[msg.sender] = true;
+        LOAN_TOKEN = loanToken;
+        COLLATERAL_TOKEN = collateralToken;
+        LOAN_TOKEN_DECIMALS = loanTokenDecimals;
+        COLLATERAL_TOKEN_DECIMALS = collateralTokenDecimals;
+        collateralUsdPrice = initialCollateralUsdPrice;
+        loanUsdPrice = initialLoanUsdPrice;
+        lastPriceUpdateTime = block.timestamp;
+        stalenessThreshold = 3600; // 1 hour default
+    }
 
-//     constructor() {
-//         stalenessThreshold = 3600; // 1 hour default
-//         whitelist[msg.sender] = true;
-//         // Set cKAIA as native by default (Kaia chain)
-//         isNativeCToken["cKAIA"] = true;
-//     }
- 
+    // ──────────────────────────── IOracle.price() ───────────────────────
 
-//     function _getUnderlyingAddress(CToken cToken) private view returns (address) {
-//         address asset;
-//         // Check if this is a native cToken (cKAIA, cKUB, cEtherlink, etc.)
-//         if (isNativeCToken[cToken.symbol()]) {
-//             asset = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-//         } else {
-//             asset = address(CErc20(address(cToken)).underlying());
-//         }
-//         return asset;
-//     }
+    /// @notice Returns the price of 1 raw collateral unit in raw loan units, scaled by 1e36 (ORACLE_PRICE_SCALE).
+    ///         Formula: (collateralUSD / loanUSD) * 10^(loanDecimals + 36 - collateralDecimals)
+    function price() external view returns (uint256) {
+        uint256 collUsd = _getCollateralUsdPrice();
+        uint256 loanUsd = _getLoanUsdPrice();
+        require(collUsd > 0, "collateral price not set");
+        require(loanUsd > 0, "loan price not set");
 
-//     function getUnderlyingPrice(CToken cToken) public override view returns (uint) {
-//         address underlying = _getUnderlyingAddress(cToken);
-//         uint8 underlyingDecimals = _getUnderlyingDecimals(underlying);
+        uint256 priceScale = 10 ** (uint256(LOAN_TOKEN_DECIMALS) + 36 - uint256(COLLATERAL_TOKEN_DECIMALS));
+        return (collUsd * priceScale) / loanUsd;
+    }
 
-//         uint256 basePrice;
+    // ──────────────────────────── Internal Price Fetchers ───────────────
 
-//         uint8 mode = oracleMode[underlying];
-//         if (mode == 1) {
-//             // Pyth mode
-//             basePrice = _getPythPrice(underlying);
-//         } else if (mode == 2) {
-//             // Orakl mode
-//             basePrice = _getOraklPrice(underlying);
-//         } else if (mode == 3) {
-//             // BKC mode
-//             basePrice = _getBKCPrice(underlying);
-//         } else {
-//             // Fallback mode (default)
-//             basePrice = fallbackPrices[underlying];
-//         }
+    function _getCollateralUsdPrice() internal view returns (uint256) {
+        uint256 rawPrice;
+        uint8 mode = collateralOracleMode;
+        if (mode == 0) rawPrice = collateralUsdPrice;
+        else if (mode == 1) rawPrice = _getPythPrice(collateralPythFeedId);
+        else if (mode == 2) rawPrice = _getOraklPrice(collateralOraklFeed);
+        else if (mode == 3) rawPrice = _getBkcPrice(collateralBkcAggregator);
+        else revert InvalidOracleMode();
 
-//         // Apply inversion if enabled
-//         if (invertMode[underlying]) {
-//             require(basePrice > 0, "Price must be positive for inversion");
-//             // keep scale to 18 decimals
-//             return 1e36 / basePrice; 
-//         }
+        if (collateralInvertMode) {
+            require(rawPrice > 0, "cannot invert zero collateral price");
+            return 1e36 / rawPrice;
+        }
+        return rawPrice;
+    }
 
-//         // Apply decimal adjustment for Compound V2 compatibility
-//         uint256 decimalAdjustment = _getDecimalAdjustment(underlyingDecimals);
-        
-//         // Avoid overflow by checking if we need to divide instead of multiply
-//         if (decimalAdjustment > 1e18) {
-//             return basePrice * (decimalAdjustment / 1e18);
-//         } else {
-//             return basePrice * decimalAdjustment / 1e18;
-//         }
-//     }
+    function _getLoanUsdPrice() internal view returns (uint256) {
+        uint256 rawPrice;
+        uint8 mode = loanOracleMode;
+        if (mode == 0) rawPrice = loanUsdPrice;
+        else if (mode == 1) rawPrice = _getPythPrice(loanPythFeedId);
+        else if (mode == 2) rawPrice = _getOraklPrice(loanOraklFeed);
+        else if (mode == 3) rawPrice = _getBkcPrice(loanBkcAggregator);
+        else revert InvalidOracleMode();
 
-//     function _getPythPrice(address token) internal view returns (uint256) {
-//         bytes32 priceId = priceFeeds[token];
-//         require(priceId != bytes32(0), "Token not supported");
+        if (loanInvertMode) {
+            require(rawPrice > 0, "cannot invert zero loan price");
+            return 1e36 / rawPrice;
+        }
+        return rawPrice;
+    }
 
-//         // Automatically reverts if older than threshold or invalid
-//         PythStructs.Price memory price = pyth.getPriceNoOlderThan(priceId, stalenessThreshold);
+    // ──────────────────────────── Pyth ──────────────────────────────────
 
-//         require(price.price > 0, "Invalid price value");
-//         require(price.expo >= -18 && price.expo <= 18, "Exponent out of range");
+    function _getPythPrice(bytes32 feedId) internal view returns (uint256) {
+        if (address(pyth) == address(0)) revert OracleContractNotSet();
+        if (feedId == bytes32(0)) revert FeedNotConfigured();
 
-//         uint256 adjustedPrice = _adjustPythPrice(price.price, price.expo);
-//         return adjustedPrice;
-//     }
+        PythStructs.Price memory pythPrice = pyth.getPriceNoOlderThan(feedId, stalenessThreshold);
+        require(pythPrice.price > 0, "Invalid Pyth price");
+        require(pythPrice.expo >= -18 && pythPrice.expo <= 18, "Pyth exponent out of range");
 
-//     function _adjustPythPrice(int64 price, int32 expo) internal pure returns (uint256) {
-//         require(price > 0, "Price must be positive");
+        return _adjustPythPrice(pythPrice.price, pythPrice.expo);
+    }
 
-//         uint256 adjustedPrice = uint256(uint64(price));
+    function _adjustPythPrice(int64 price, int32 expo) internal pure returns (uint256) {
+        require(price > 0, "Price must be positive");
+        uint256 adjustedPrice = uint256(uint64(price));
 
-//         if (expo >= 0) {
-//             adjustedPrice = adjustedPrice * (10 ** uint32(expo));
-//         } else {
-//             adjustedPrice = adjustedPrice / (10 ** uint32(-expo));
-//         }
+        if (expo >= 0) {
+            adjustedPrice = adjustedPrice * (10 ** uint32(expo));
+        } else {
+            adjustedPrice = adjustedPrice / (10 ** uint32(-expo));
+        }
 
-//         // Normalize to 18 decimals
-//         return adjustedPrice * 1e18 / 1e8;
-//     }
+        // Normalize to 18 decimals
+        return adjustedPrice * 1e18 / 1e8;
+    }
 
-//     function _getOraklPrice(address token) internal view returns (uint256) {
-//         string memory feedName = oraklFeeds[token];
-//         require(bytes(feedName).length > 0, "Token not supported");
+    // ──────────────────────────── Orakl ─────────────────────────────────
 
-//         (, int256 answer, uint256 updatedAt) = oraklRouter.latestRoundData(feedName);
+    function _getOraklPrice(string memory feedName) internal view returns (uint256) {
+        if (address(oraklRouter) == address(0)) revert OracleContractNotSet();
+        require(bytes(feedName).length > 0, "Orakl feed not configured");
 
-//         require(block.timestamp - updatedAt <= stalenessThreshold, "Price too stale");
-//         require(answer > 0, "Invalid price");
+        (, int256 answer, uint256 updatedAt) = oraklRouter.latestRoundData(feedName);
 
-//         // Get feed decimals and adjust to 18 decimals
-//         uint8 feedDecimals = oraklRouter.decimals(feedName);
-//         uint256 price = uint256(answer);
-        
-//         if (feedDecimals < 18) {
-//             price = price * (10 ** (18 - feedDecimals));
-//         } else if (feedDecimals > 18) {
-//             price = price / (10 ** (feedDecimals - 18));
-//         }
-        
-//         return price;
-//     }
+        require(block.timestamp - updatedAt <= stalenessThreshold, "Orakl price too stale");
+        require(answer > 0, "Invalid Orakl price");
 
-//     function _getBKCPrice(address token) internal view returns (uint256) {
-//         address aggregator = bkcAggregators[token];
-//         require(aggregator != address(0), "BKC aggregator not set");
-        
-//         (
-//             ,
-//             int256 answer,
-//             ,
-//             uint256 updatedAt,
-            
-//         ) = AggregatorV2V3Interface(aggregator).latestRoundData();
-        
-//         require(answer > 0, "Invalid BKC price");
-//         require(block.timestamp - updatedAt <= stalenessThreshold, "BKC price too stale");
-        
-//         uint256 price = uint256(answer);
-        
-//         // BKC Chain uses 8 decimals for all price feeds
-//         // Normalize from 8 decimals to 18 decimals (standard oracle format)
-//         // Example: $1.00 = 100,000,000 (8 decimals) → 1e18 (normalized)
-//         price = price * (10 ** (18 - 8)); // Multiply by 1e10
-        
-//         return price; // Returns price in 1e18 format
-//     }
+        // Get feed decimals and normalize to 18 decimals
+        uint8 feedDecimals = oraklRouter.decimals(feedName);
+        uint256 price = uint256(answer);
 
-//     function _getUnderlyingDecimals(address underlying) private view returns (uint8) {
-//         // Handle native token (KAIA/ETH)
-//         if (underlying == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-//             return 18;
-//         }
-        
-//         // Get decimals from ERC20 contract
-//         return EIP20Interface(underlying).decimals();
-//     }
+        if (feedDecimals < 18) {
+            price = price * (10 ** (18 - feedDecimals));
+        } else if (feedDecimals > 18) {
+            price = price / (10 ** (feedDecimals - 18));
+        }
 
-//     function _getDecimalAdjustment(uint8 tokenDecimals) private pure returns (uint256) {
-//         if (tokenDecimals >= 18) {
-//             return 1e18;
-//         }
-        
-//         // For tokens with < 18 decimals, multiply by additional factor
-//         // This ensures borrowBalance * price calculation works correctly
-//         uint8 decimalDifference = 18 - tokenDecimals;
-//         return 1e18 * (10 ** decimalDifference);
-//     }
+        return price;
+    }
 
-//     function setDirectPrice(address asset, uint price) public isWhitelisted { 
-//         // automatically enable fallback mode if not set
-//         if (fallbackPrices[asset] == 0) {
-//             oracleMode[asset] = 0; // fallback mode
-//         }
-//         require(oracleMode[asset] == 0, "only fallback mode"); 
-//         require(price > 0, "price must be positive");
-//         require(price >= MIN_PRICE && price <= MAX_PRICE, 
-//             "price out of global bounds");
+    // ──────────────────────────── BKC (Chainlink-style) ─────────────────
 
-//         if (lastPriceUpdateTime[asset] != 0) {
-//             require(block.timestamp >= lastPriceUpdateTime[asset] + PRICE_UPDATE_DELAY,
-//             "price update too frequent");
-//         }
-        
-//         // ADD PRICE BOUNDS CHECK:
-//         uint256 lastPrice = lastValidPrice[asset];
-//         if (lastPrice > 0) {
-//             uint256 minPrice = lastPrice * (10000 - MAX_PRICE_DEVIATION_BPS) / 10000;
-//             uint256 maxPrice = lastPrice * (10000 + MAX_PRICE_DEVIATION_BPS) / 10000;
-//             require(price >= minPrice && price <= maxPrice, 
-//                     "price deviation too high");
-//         }
+    function _getBkcPrice(address aggregator) internal view returns (uint256) {
+        if (aggregator == address(0)) revert FeedNotConfigured();
 
-//         emit PricePosted(asset, fallbackPrices[asset], price, price);
-//         fallbackPrices[asset] = price;
-//         lastValidPrice[asset] = price;
-//         lastPriceUpdateTime[asset] = block.timestamp;
-//     }
+        (, int256 answer, , uint256 updatedAt, ) = AggregatorV2V3Interface(aggregator).latestRoundData();
 
-//     function getPriceInfo(CToken cToken) external view returns (
-//         address underlying,
-//         uint8 decimals,
-//         uint256 basePrice,
-//         uint256 finalPrice,
-//         uint256 decimalAdjustment
-//     ) {
-//         underlying = _getUnderlyingAddress(cToken);
-//         decimals = _getUnderlyingDecimals(underlying);
-        
-//         uint8 mode = oracleMode[underlying];
-//         if (mode == 1) {
-//             // Pyth mode
-//             basePrice = _getPythPrice(underlying);
-//         } else if (mode == 2) {
-//             // Orakl mode
-//             basePrice = _getOraklPrice(underlying);
-//         } else if (mode == 3) {
-//             // BKC mode
-//             basePrice = _getBKCPrice(underlying);
-//         } else {
-//             // Fallback mode (default)
-//             basePrice = fallbackPrices[underlying];
-//         }
-        
-//         decimalAdjustment = _getDecimalAdjustment(decimals);
-//         finalPrice = getUnderlyingPrice(cToken);
-//     }
+        require(answer > 0, "Invalid BKC price");
+        require(block.timestamp - updatedAt <= stalenessThreshold, "BKC price too stale");
 
-//     function compareStrings(string memory a, string memory b) internal pure returns (bool) {
-//         return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
-//     }
+        // Get aggregator decimals and normalize to 18 decimals
+        uint8 aggDecimals = AggregatorV2V3Interface(aggregator).decimals();
+        uint256 price = uint256(answer);
 
-//     // Admin functions
+        if (aggDecimals < 18) {
+            price = price * (10 ** (18 - aggDecimals));
+        } else if (aggDecimals > 18) {
+            price = price / (10 ** (aggDecimals - 18));
+        }
 
-//     function setPythFeed(address token, bytes32 priceId) external onlyOwner {
-//         priceFeeds[token] = priceId;
-//         oracleMode[token] = 1; // Pyth mode
-//         emit PythFeedSet(token, priceId);
-//     }
+        return price;
+    }
 
-//     function setOraklFeed(address token, string calldata feedName) external onlyOwner {
-//         oraklFeeds[token] = feedName;
-//         oracleMode[token] = 2; // Orakl mode
-//         emit OraklFeedSet(token, feedName);
-//     }
+    // ──────────────────────────── Fallback Price Setter ─────────────────
 
-//     /**
-//      * @notice Set BKC aggregator for a token
-//      * @dev BKC Chain uses Chainlink-style price aggregators with 8 decimal precision
-//      * @param token The underlying token address
-//      * @param aggregator The BKC Chain aggregator contract address
-//      */
-//     function setBKCFeed(address token, address aggregator) external onlyOwner {
-//         require(aggregator != address(0), "Invalid aggregator address");
-//         bkcAggregators[token] = aggregator;
-//         oracleMode[token] = 3; // BKC mode
-//         emit BkcFeedSet(token, aggregator);
-//     }
+    /// @notice Update USD prices for both assets (fallback mode). Only callable by whitelisted addresses.
+    function setPrice(uint256 newCollateralUsdPrice, uint256 newLoanUsdPrice) external {
+        if (!whitelist[msg.sender]) revert NotWhitelisted();
+        if (newCollateralUsdPrice == 0 || newLoanUsdPrice == 0) revert ZeroPrice();
+        if (block.timestamp < lastPriceUpdateTime + PRICE_UPDATE_DELAY) revert UpdateTooFrequent();
 
-//     function setOracleMode(address token, uint8 mode) external onlyOwner {
-//         require(mode <= 3, "Invalid mode");
-//         oracleMode[token] = mode;
-//         emit OracleModeSet(token, mode);
-//     }
+        collateralUsdPrice = newCollateralUsdPrice;
+        loanUsdPrice = newLoanUsdPrice;
+        lastPriceUpdateTime = block.timestamp;
 
-//     function setPyth(address _pyth) external onlyOwner {
-//         pyth = IPyth(_pyth);
-//     }
+        emit PriceUpdated(newCollateralUsdPrice, newLoanUsdPrice);
+    }
 
-//     function setOraklRouter(address _oraklRouter) external onlyOwner {
-//         oraklRouter = IOraklFeedRouter(_oraklRouter);
-//     }
-    
-//     function setStalenessThreshold(uint256 newThreshold) external onlyOwner {
-//         require(newThreshold > 0, "Invalid threshold");
-//         stalenessThreshold = newThreshold;
-//         emit StalenessThresholdUpdated(newThreshold);
-//     }
+    // ──────────────────────────── Admin: Oracle Configuration ───────────
 
-//     function setInvertMode(address token, bool enabled) external onlyOwner {
-//         invertMode[token] = enabled;
-//     }
+    /// @notice Set Pyth feed IDs for both collateral and loan tokens, and enable Pyth mode.
+    function setPythFeed(bytes32 collateralFeedId, bytes32 loanFeedId) external {
+        if (msg.sender != owner) revert NotOwner();
+        require(collateralFeedId != bytes32(0) && loanFeedId != bytes32(0), "Zero feed ID");
+        collateralPythFeedId = collateralFeedId;
+        loanPythFeedId = loanFeedId;
+        collateralOracleMode = 1;
+        loanOracleMode = 1;
+        emit PythFeedSet(collateralFeedId, loanFeedId);
+        emit OracleModeSet(1, 1);
+    }
 
-//     /**
-//      * @notice Set or unset a cToken symbol as native token wrapper
-//      * @dev Native tokens (KAIA, KUB, XTZ, etc.) don't have an underlying ERC20 address
-//      * @param symbol The cToken symbol (e.g., "cKAIA", "cKUB", "cEtherlink")
-//      * @param isNative Whether this cToken wraps the native chain token
-//      */
-//     function setNativeCToken(string calldata symbol, bool isNative) external onlyOwner {
-//         isNativeCToken[symbol] = isNative;
-//         emit NativeCTokenSet(symbol, isNative);
-//     }
+    /// @notice Set Orakl feed names for both collateral and loan tokens, and enable Orakl mode.
+    function setOraklFeed(string calldata collateralFeed, string calldata loanFeed) external {
+        if (msg.sender != owner) revert NotOwner();
+        require(bytes(collateralFeed).length > 0 && bytes(loanFeed).length > 0, "Empty feed name");
+        collateralOraklFeed = collateralFeed;
+        loanOraklFeed = loanFeed;
+        collateralOracleMode = 2;
+        loanOracleMode = 2;
+        emit OraklFeedSet(collateralFeed, loanFeed);
+        emit OracleModeSet(2, 2);
+    }
 
-//     function updatePythPrices(bytes[] calldata updateData) external payable {
-//         uint256 updateFee = pyth.getUpdateFee(updateData);
-//         require(msg.value >= updateFee, "Insufficient fee for update");
+    /// @notice Set BKC/Chainlink-style aggregators for both tokens, and enable BKC mode.
+    function setBkcFeed(address collateralAggregator, address loanAggregator) external {
+        if (msg.sender != owner) revert NotOwner();
+        require(collateralAggregator != address(0) && loanAggregator != address(0), "Zero aggregator");
+        collateralBkcAggregator = collateralAggregator;
+        loanBkcAggregator = loanAggregator;
+        collateralOracleMode = 3;
+        loanOracleMode = 3;
+        emit BkcFeedSet(collateralAggregator, loanAggregator);
+        emit OracleModeSet(3, 3);
+    }
 
-//         // Perform Pyth price feed update
-//         pyth.updatePriceFeeds{value: updateFee}(updateData);
+    /// @notice Manually set oracle modes for each side independently.
+    ///         Allows mixing sources (e.g. Pyth for collateral, Orakl for loan).
+    function setOracleMode(uint8 collateralMode, uint8 loanMode) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (collateralMode > 3 || loanMode > 3) revert InvalidOracleMode();
+        collateralOracleMode = collateralMode;
+        loanOracleMode = loanMode;
+        emit OracleModeSet(collateralMode, loanMode);
+    }
 
-//         // Refund any excess ETH safely
-//         if (msg.value > updateFee) {
-//             (bool sent, ) = msg.sender.call{value: msg.value - updateFee}("");
-//             require(sent, "Refund failed");
-//         }
-//     }
+    /// @notice Set the Pyth oracle contract address.
+    function setPyth(address _pyth) external {
+        if (msg.sender != owner) revert NotOwner();
+        pyth = IPyth(_pyth);
+        emit PythContractSet(_pyth);
+    }
 
-//     function getUpdateFee(bytes[] calldata updateData) external view returns (uint256) {
-//         return pyth.getUpdateFee(updateData);
-//     }
+    /// @notice Set the Orakl feed router contract address.
+    function setOraklRouter(address _oraklRouter) external {
+        if (msg.sender != owner) revert NotOwner();
+        oraklRouter = IOraklFeedRouter(_oraklRouter);
+        emit OraklRouterSet(_oraklRouter);
+    }
 
-//     // Whitelist management functions
+    /// @notice Set the staleness threshold (in seconds) for Pyth/Orakl/BKC price freshness.
+    function setStalenessThreshold(uint256 newThreshold) external {
+        if (msg.sender != owner) revert NotOwner();
+        require(newThreshold > 0, "Zero threshold");
+        stalenessThreshold = newThreshold;
+        emit StalenessThresholdUpdated(newThreshold);
+    }
 
-//     /**
-//      * @notice Add address to whitelist for setDirectPrice function
-//      * @param user The address to add to whitelist
-//      */
-//     function addToWhitelist(address user) external onlyOwner {
-//         require(user != address(0), "Cannot whitelist zero address");
-//         whitelist[user] = true; 
-//     }
+    /// @notice Enable or disable price inversion for collateral and/or loan side.
+    ///         When enabled, the raw price from any oracle source is inverted: 1e36 / rawPrice.
+    ///         Useful when a feed quotes in the wrong direction (e.g. JPY/USD instead of USD/JPY).
+    function setInvertMode(bool collateralInvert, bool loanInvert) external {
+        if (msg.sender != owner) revert NotOwner();
+        collateralInvertMode = collateralInvert;
+        loanInvertMode = loanInvert;
+        emit InvertModeSet(collateralInvert, loanInvert);
+    }
 
-//     /**
-//      * @notice Remove address from whitelist
-//      * @param user The address to remove from whitelist
-//      */
-//     function removeFromWhitelist(address user) external onlyOwner {
-//         whitelist[user] = false; 
-//     }
+    // ──────────────────────────── Pyth Price Update ─────────────────────
 
-// }
+    /// @notice Push Pyth price updates on-chain. Payable — caller must send enough ETH for the update fee.
+    ///         Excess ETH is refunded to the caller.
+    function updatePythPrices(bytes[] calldata updateData) external payable {
+        if (address(pyth) == address(0)) revert OracleContractNotSet();
+        uint256 updateFee = pyth.getUpdateFee(updateData);
+        require(msg.value >= updateFee, "Insufficient fee for Pyth update");
+
+        pyth.updatePriceFeeds{value: updateFee}(updateData);
+
+        // Refund excess ETH
+        if (msg.value > updateFee) {
+            (bool sent, ) = msg.sender.call{value: msg.value - updateFee}("");
+            require(sent, "Refund failed");
+        }
+    }
+
+    /// @notice Get the required fee for a Pyth price update.
+    function getUpdateFee(bytes[] calldata updateData) external view returns (uint256) {
+        if (address(pyth) == address(0)) revert OracleContractNotSet();
+        return pyth.getUpdateFee(updateData);
+    }
+
+    // ──────────────────────────── Access Control ────────────────────────
+
+    function addToWhitelist(address user) external {
+        if (msg.sender != owner) revert NotOwner();
+        whitelist[user] = true;
+        emit WhitelistUpdated(user, true);
+    }
+
+    function removeFromWhitelist(address user) external {
+        if (msg.sender != owner) revert NotOwner();
+        whitelist[user] = false;
+        emit WhitelistUpdated(user, false);
+    }
+
+    function transferOwnership(address newOwner) external {
+        if (msg.sender != owner) revert NotOwner();
+        address oldOwner = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    // ──────────────────────────── View Helpers ──────────────────────────
+
+    /// @notice Get the current collateral USD price from the active oracle source.
+    function getCollateralUsdPrice() external view returns (uint256) {
+        return _getCollateralUsdPrice();
+    }
+
+    /// @notice Get the current loan USD price from the active oracle source.
+    function getLoanUsdPrice() external view returns (uint256) {
+        return _getLoanUsdPrice();
+    }
+
+    /// @notice Get detailed price info for debugging.
+    function getPriceInfo() external view returns (
+        uint8 collMode,
+        uint8 lnMode,
+        uint256 collUsd,
+        uint256 lnUsd,
+        uint256 morphoPrice
+    ) {
+        collMode = collateralOracleMode;
+        lnMode = loanOracleMode;
+        collUsd = _getCollateralUsdPrice();
+        lnUsd = _getLoanUsdPrice();
+        uint256 priceScale = 10 ** (uint256(LOAN_TOKEN_DECIMALS) + 36 - uint256(COLLATERAL_TOKEN_DECIMALS));
+        morphoPrice = (collUsd * priceScale) / lnUsd;
+    }
+}
