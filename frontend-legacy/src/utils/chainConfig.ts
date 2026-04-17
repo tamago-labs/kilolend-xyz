@@ -57,6 +57,7 @@ export const CHAIN_CONTRACTS = {
     cKAIA: '0x2029f3E3C667EBd68b1D29dbd61dc383BdbB56e5',
     cStKAIA: '0x8A424cCf2D2B7D85F1DFb756307411D2BBc73e07',
     cstKAIA: '0x8A424cCf2D2B7D85F1DFb756307411D2BBc73e07',
+    cKLAW: '0x0149eD6F9b8E326ee1fD6D4eB7D8933E5F30b989',
     USDT: '0xd077A400968890Eacc75cdc901F0356c943e4fDb',
     SIX: '0xEf82b1C6A550e730D8283E1eDD4977cd01FAF435',
     BORA: '0x02cbE46fB8A1F579254a9B485788f2D86Cad51aa',
@@ -139,6 +140,16 @@ export const CHAIN_MARKETS = {
       isActive: true,
       isCollateralOnly: false,
       description: 'MARBLEX gaming platform token',
+      interestModel: 'Volatile'
+    },
+    klaw: {
+      id: 'kaia-klaw',
+      name: 'KlawSter',
+      symbol: 'KLAW',
+      decimals: 18,
+      isActive: true,
+      isCollateralOnly: false,
+      description: 'KlawSter utility token',
       interestModel: 'Volatile'
     },
     kaia: {
@@ -236,6 +247,9 @@ export const getTokenIcon = (symbol: string): string => {
   }
   if (symbol === 'MBX') {
     return 'https://s2.coinmarketcap.com/static/img/coins/64x64/18895.png';
+  }
+  if (symbol === 'KLAW') {
+    return 'https://s2.coinmarketcap.com/static/img/coins/64x64/29706.png';
   }
   if (symbol === 'stKAIA') {
     return 'https://assets.coingecko.com/coins/images/40001/standard/token_stkaia.png';
