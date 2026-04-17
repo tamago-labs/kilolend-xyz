@@ -2,30 +2,30 @@
 pragma solidity ^0.8.10;
 
 import {Script, console} from "forge-std/Script.sol";
-import "../../src/tokens/AIAgentToken.sol";
-import "../../src/dex/core/KiloDexFactory.sol";
-import "../../src/dex/periphery/Router.sol";
-import "../../src/dex/core/KiloDexPool.sol";
-import "../../src/dex/periphery/AntiSnipAttackPositionManager.sol";
-import "../../src/dex/periphery/TokenPositionDescriptor.sol";
-import "../../src/dex/periphery/QuoterV2.sol";
-import "../../src/dex/periphery/TicksFeesReader.sol";
-import "../../src/dex/oracle/PoolOracle.sol";
+import "../src/tokens/AIAgentToken.sol";
+import "../src/core/KiloDexFactory.sol";
+import "../src/periphery/Router.sol";
+import "../src/core/KiloDexPool.sol";
+import "../src/periphery/AntiSnipAttackPositionManager.sol";
+import "../src/periphery/TokenPositionDescriptor.sol";
+import "../src/periphery/QuoterV2.sol";
+import "../src/periphery/TicksFeesReader.sol";
+import "../src/oracle/PoolOracle.sol";
 
 /**
- * @title DeployKubDEX
- * @notice Deploy KUB-specific DEX (Factory, Router, Libraries) for Kubster ecosystem
+ * @title DeployKaiaDEX
+ * @notice Deploy KAIA-specific DEX (Factory, Router, Libraries) for Klawster ecosystem on KAIA Mainnet
  * @dev Usage: 
- *   forge script script/dex/2-DeployKubDEX.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
+ *   forge script script/dex/5-DeployKaiaDEX.s.sol --rpc-url $KAIA_RPC_URL --broadcast --verify
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
- *   - KUBS_TOKEN_ADDRESS: Address of deployed KUBS token
- *   - WKUB_ADDRESS: Wrapped KUB (WKUB) address on KUB
+ *   - KLAW_TOKEN_ADDRESS: Address of deployed KLAW token on KAIA
+ *   - WKAIA_ADDRESS: Wrapped KAIA (WKAIA) address on KAIA Mainnet
  */
-contract DeployKubDEX is Script {
+contract DeployKaiaDEX is Script {
     
-    // KUB DEX Configuration
+    // KAIA DEX Configuration
     uint32 public constant VESTING_PERIOD = 30 days; // 30 days vesting period
     
     struct DEXDeployment {
@@ -36,8 +36,8 @@ contract DeployKubDEX is Script {
         address quoter;
         address ticksFeesReader;
         address descriptor;
-        address kubsToken;
-        address wkub;
+        address klawToken;
+        address wkaia;
     }
     
     function run() external returns (DEXDeployment memory) {
@@ -45,15 +45,15 @@ contract DeployKubDEX is Script {
     }
     
     /**
-     * @notice Deploy KUB DEX components
+     * @notice Deploy KAIA DEX components
      * @return deployment DEX deployment details
      */
     function deploy() public returns (DEXDeployment memory) {
         console.log("===========================================");
-        console.log("Deploy KUB DEX Components");
+        console.log("Deploy KAIA DEX Components on KAIA Mainnet");
         console.log("===========================================");
         console.log("Chain ID:", block.chainid);
-        require(block.chainid == 96, "Must deploy to KUB Chain (chain ID 96)");
+        require(block.chainid == 8217, "Must deploy to KAIA Mainnet (chain ID 8217)");
         
         uint256 deployerPrivateKey = _getDeployerPrivateKey();
         address deployer = vm.addr(deployerPrivateKey);
@@ -61,11 +61,11 @@ contract DeployKubDEX is Script {
         console.log("Deployer address:", deployer);
         console.log("Block number:", block.number);
         
-        address kubsToken = 0xAAC3ad3b84FbC8A8F3BEe534e2645b0698937280; // NO NEED HERE
-        address wkub = 0x67eBD850304c70d983B2d1b93ea79c7CD6c3F6b5;
+        address klawToken = 0xd145A1F18c5EDc9CeE0994e6a8e2eB9Dd0A40Cb6;
+        address wkaia = 0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432; // WKAIA on KAIA Mainnet
         
-        console.log("KUBS Token:", kubsToken);
-        console.log("WKUB:", wkub);
+        console.log("KLAW Token:", klawToken);
+        console.log("WKAIA:", wkaia);
         
         console.log("===========================================");
         console.log("DEX Configuration:");
@@ -92,14 +92,14 @@ contract DeployKubDEX is Script {
         vm.startBroadcast(deployerPrivateKey);
         AntiSnipAttackPositionManager positionManager = new AntiSnipAttackPositionManager(
             address(factory),
-            wkub,
+            wkaia,
             address(descriptor)
         );
         vm.stopBroadcast();
         console.log("AntiSnipAttackPositionManager deployed:", address(positionManager));
         
         vm.startBroadcast(deployerPrivateKey);
-        Router router = new Router(address(factory), wkub);
+        Router router = new Router(address(factory), wkaia);
         vm.stopBroadcast();
         console.log("Router deployed:", address(router));
         
@@ -134,15 +134,14 @@ contract DeployKubDEX is Script {
         deployment.quoter = address(quoter);
         deployment.ticksFeesReader = address(ticksFeesReader);
         deployment.descriptor = address(descriptor);
-        deployment.kubsToken = kubsToken;
-        deployment.wkub = wkub;
+        deployment.klawToken = klawToken;
+        deployment.wkaia = wkaia;
         
         _logDeploymentResults(deployment);
         _verifyDeployment(deployment, deployerPrivateKey);
-        // _exportDeployment(deployment);
         
         console.log("===========================================");
-        console.log("KUB DEX deployment complete!");
+        console.log("KAIA DEX deployment complete!");
         console.log("===========================================");
         
         return deployment;
@@ -153,10 +152,9 @@ contract DeployKubDEX is Script {
         return _parsePrivateKey(privateKeyString);
     }
 
-
     function _logDeploymentResults(DEXDeployment memory deployment) internal view {
         console.log("\n===========================================");
-        console.log("KUB DEX Deployment Results");
+        console.log("KAIA DEX Deployment Results");
         console.log("===========================================");
         console.log("Factory Address:", deployment.factory);
         console.log("Router Address:", deployment.router);
@@ -165,8 +163,8 @@ contract DeployKubDEX is Script {
         console.log("QuoterV2 Address:", deployment.quoter);
         console.log("TicksFeesReader Address:", deployment.ticksFeesReader);
         console.log("Descriptor Address:", deployment.descriptor);
-        console.log("KUBS Token:", deployment.kubsToken);
-        console.log("WKUB Token:", deployment.wkub);
+        console.log("KLAW Token:", deployment.klawToken);
+        console.log("WKAIA Token:", deployment.wkaia);
     }
     
     function _verifyDeployment(DEXDeployment memory deployment, uint256 deployerPrivateKey) internal view {
@@ -194,13 +192,13 @@ contract DeployKubDEX is Script {
         // Verify router
         Router router = Router(payable(deployment.router));
         require(address(router.factory()) == deployment.factory, "Router factory not set correctly");
-        require(router.WETH() == deployment.wkub, "Router WETH not set correctly");
+        require(router.WETH() == deployment.wkaia, "Router WETH not set correctly");
         console.log("[OK] Router configuration verified");
         
         // Verify position manager
         AntiSnipAttackPositionManager pm = AntiSnipAttackPositionManager(payable(deployment.positionManager));
         require(pm.factory() == deployment.factory, "PositionManager factory not set correctly");
-        require(pm.WETH() == deployment.wkub, "PositionManager WETH not set correctly");
+        require(pm.WETH() == deployment.wkaia, "PositionManager WETH not set correctly");
         console.log("[OK] PositionManager configuration verified");
         
         // Verify whitelist and fee tiers

@@ -2,14 +2,14 @@
 pragma solidity ^0.8.10;
 
 import {Script, console} from "forge-std/Script.sol";
-import "../../src/tokens/AIAgentToken.sol";
-import "../../src/dex/core/KiloDexFactory.sol";
-import "../../src/dex/core/KiloDexPool.sol";
-import "../../src/dex/periphery/Router.sol";
-import "../../src/dex/periphery/AntiSnipAttackPositionManager.sol";
-import "../../src/dex/interfaces/periphery/IBasePositionManager.sol";
-import "../../src/dex/libraries/TickMath.sol";
-import "../../src/dex/libraries/QtyDeltaMath.sol";
+import "../src/tokens/AIAgentToken.sol";
+import "../src/core/KiloDexFactory.sol";
+import "../src/core/KiloDexPool.sol";
+import "../src/periphery/Router.sol";
+import "../src/periphery/AntiSnipAttackPositionManager.sol";
+import "../src/interfaces/periphery/IBasePositionManager.sol";
+import "../src/libraries/TickMath.sol";
+import "../src/libraries/QtyDeltaMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**

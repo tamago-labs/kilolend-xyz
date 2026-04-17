@@ -2,19 +2,19 @@
 pragma solidity ^0.8.10;
 
 import {Script, console} from "forge-std/Script.sol";
-import "../../src/tokens/AIAgentToken.sol";
+import "../src/tokens/AIAgentToken.sol";
 
 /**
- * @title DeployKlawsterTokenKAIA
- * @notice Deploy Klawster Token (KLAW) using the generic AIAgentToken contract on KAIA Mainnet
+ * @title DeployKlawsterToken
+ * @notice Deploy Klawster Token (KLAW) using the generic AIAgentToken contract
  * @dev Usage: 
- *   forge script script/dex/4-DeployKlawTokenKAIA.s.sol --rpc-url $KAIA_RPC_URL --broadcast --verify
+ *   forge script script/dex/1-DeployKlawsterToken.s.sol --rpc-url $KUB_RPC_URL --broadcast --legacy
  *   
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key
  *   - AI_AGENT_ADDRESS: Initial AI agent address (optional)
  */
-contract DeployKlawsterTokenKAIA is Script {
+contract DeployKlawsterToken is Script {
     
     // Klawster Token Configuration
     string public constant TOKEN_NAME = "Klawster";
@@ -38,10 +38,10 @@ contract DeployKlawsterTokenKAIA is Script {
      */
     function deploy() public returns (TokenDeployment memory) {
         console.log("===========================================");
-        console.log("Deploy Klawster Token (KLAW) on KAIA Mainnet");
+        console.log("Deploy Klawster Token (KLAW)");
         console.log("===========================================");
         console.log("Chain ID:", block.chainid);
-        require(block.chainid == 8217, "Must deploy to KAIA Mainnet (chain ID 8217)");
+        require(block.chainid == 96, "Must deploy to KUB Chain (chain ID 96)");
         
         string memory privateKeyString = vm.envString("PRIVATE_KEY");
         uint256 deployerPrivateKey = _parsePrivateKey(privateKeyString);
@@ -52,8 +52,8 @@ contract DeployKlawsterTokenKAIA is Script {
         
         // Check deployer balance
         uint256 balance = deployer.balance;
-        console.log("Deployer balance:", balance / 1e18, "KAIA");
-        require(balance > 0.01 ether, "Insufficient balance for deployment (need at least 0.01 KAIA)");
+        console.log("Deployer balance:", balance / 1e18, "KUB");
+        require(balance > 0.01 ether, "Insufficient balance for deployment (need at least 0.01 KUB)");
         
         // Get AI agent address (optional)
         address aiAgent = _getAIAgentAddress();
@@ -92,7 +92,7 @@ contract DeployKlawsterTokenKAIA is Script {
         _verifyDeployment(deployment);
         
         console.log("===========================================");
-        console.log("Klawster Token deployment on KAIA Mainnet complete!");
+        console.log("Klawster Token deployment complete!");
         console.log("===========================================");
         
         return deployment;
