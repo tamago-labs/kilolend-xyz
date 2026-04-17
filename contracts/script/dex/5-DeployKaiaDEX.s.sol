@@ -151,14 +151,6 @@ contract DeployKaiaDEX is Script {
         string memory privateKeyString = vm.envString("PRIVATE_KEY");
         return _parsePrivateKey(privateKeyString);
     }
-    
-    function _getKLAWTokenAddress() internal view returns (address) {
-        try vm.envAddress("KLAW_TOKEN_ADDRESS") returns (address klawToken) {
-            return klawToken;
-        } catch {
-            revert("KLAW_TOKEN_ADDRESS environment variable not set");
-        }
-    }
 
     function _logDeploymentResults(DEXDeployment memory deployment) internal view {
         console.log("\n===========================================");

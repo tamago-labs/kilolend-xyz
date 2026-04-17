@@ -9,6 +9,6 @@ optimizer_runs = 200
 # RPC endpoints
 [rpc_endpoints]
 kaia_testnet = "https://public-en.kairos.node.kaia.io"
-kaia_mainnet = "https://public-en.node.kaia.io"
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
