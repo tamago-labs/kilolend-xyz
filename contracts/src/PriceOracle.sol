@@ -7,7 +7,7 @@ import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import {IOraklFeedRouter} from "./interfaces/IOraklFeedRouter.sol";
 import {AggregatorV2V3Interface} from "./interfaces/AggregatorV2V3Interface.sol";
 
-/// @title KiloPriceOracle
+/// @title PriceOracle
 /// @notice A multi-source price oracle
 ///         Each instance is bound to one collateral/loan pair at construction.
 ///         Supports 4 oracle sources: Fallback (admin-set), Pyth, Orakl, and BKC (Chainlink-style).
@@ -18,7 +18,7 @@ import {AggregatorV2V3Interface} from "./interfaces/AggregatorV2V3Interface.sol"
 ///   1 = Pyth     (Pyth Network real-time price feed)
 ///   2 = Orakl    (Orakl Network price feed)
 ///   3 = BKC      (Chainlink-style aggregator, e.g. BKC Chain)
-contract KiloPriceOracle is IOracle {
+contract PriceOracle is IOracle {
     // ──────────────────────────── Immutables ────────────────────────────
     address public immutable LOAN_TOKEN;
     address public immutable COLLATERAL_TOKEN;

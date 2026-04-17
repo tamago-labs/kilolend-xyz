@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-import "../src/KiloPriceOracle.sol";
+import "../src/PriceOracle.sol";
 
 
 contract PriceOracleTest is Test {
 
-    KiloPriceOracle oracle;
+    PriceOracle oracle;
 
     address loanToken = makeAddr("USDT");
     address collateralToken = makeAddr("KUB");
@@ -30,7 +30,7 @@ contract PriceOracleTest is Test {
     event StalenessThresholdUpdated(uint256 newThreshold);
 
     function setUp() public {
-        oracle = new KiloPriceOracle(
+        oracle = new PriceOracle(
             loanToken,
             collateralToken,
             KUB_USD,
@@ -54,8 +54,8 @@ contract PriceOracleTest is Test {
     function test_price_withDifferentDecimals() public {
         // Test with 6-decimal loan token (real USDT)
         address usdt6 = makeAddr("USDT6");
-        KiloPriceOracle oracle6 =
-            new KiloPriceOracle(usdt6, collateralToken, KUB_USD, USDT_USD, 6, 18);
+        PriceOracle oracle6 =
+            new PriceOracle(usdt6, collateralToken, KUB_USD, USDT_USD, 6, 18);
         // price = (85e16 / 1e18) * 10^(6+36-18) = 0.85 * 1e24 = 85e22
         uint256 p = oracle6.price();
         assertEq(p, 85e22, "6/18 decimal price mismatch");
@@ -63,8 +63,8 @@ contract PriceOracleTest is Test {
 
     function test_price_equalPrices() public {
         // Both tokens = $1
-        KiloPriceOracle oracleEq =
-            new KiloPriceOracle(loanToken, collateralToken, 1e18, 1e18, 18, 18);
+        PriceOracle oracleEq =
+            new PriceOracle(loanToken, collateralToken, 1e18, 1e18, 18, 18);
         // price = (1e18 / 1e18) * 10^36 = 1e36
         uint256 p = oracleEq.price();
         assertEq(p, 1e36, "Equal price should be 1e36");
@@ -72,8 +72,8 @@ contract PriceOracleTest is Test {
 
     function test_price_collateralMoreValuable() public {
         // Collateral = $3000 (ETH), Loan = $1 (USDT)
-        KiloPriceOracle oracleEth =
-            new KiloPriceOracle(loanToken, collateralToken, 3000e18, 1e18, 18, 18);
+        PriceOracle oracleEth =
+            new PriceOracle(loanToken, collateralToken, 3000e18, 1e18, 18, 18);
         // price = (3000e18 / 1e18) * 1e36 = 3000e36
         uint256 p = oracleEth.price();
         assertEq(p, 3000e36, "ETH/USDT price mismatch");
@@ -119,7 +119,7 @@ contract PriceOracleTest is Test {
 
     function test_invertMode_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setInvertMode(true, false);
     }
 
@@ -136,7 +136,7 @@ contract PriceOracleTest is Test {
     function test_setPrice_onlyWhitelisted() public {
         vm.warp(block.timestamp + 2 hours);
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotWhitelisted.selector);
+        vm.expectRevert(PriceOracle.NotWhitelisted.selector);
         oracle.setPrice(2e18, USDT_USD);
     }
 
@@ -149,19 +149,19 @@ contract PriceOracleTest is Test {
 
     function test_setPrice_zeroReverts() public {
         vm.warp(block.timestamp + 2 hours);
-        vm.expectRevert(KiloPriceOracle.ZeroPrice.selector);
+        vm.expectRevert(PriceOracle.ZeroPrice.selector);
         oracle.setPrice(0, USDT_USD);
     }
 
     function test_setPrice_zeroLoanReverts() public {
         vm.warp(block.timestamp + 2 hours);
-        vm.expectRevert(KiloPriceOracle.ZeroPrice.selector);
+        vm.expectRevert(PriceOracle.ZeroPrice.selector);
         oracle.setPrice(KUB_USD, 0);
     }
 
     function test_setPrice_updateDelay() public {
         // Attempting to update immediately should fail
-        vm.expectRevert(KiloPriceOracle.UpdateTooFrequent.selector);
+        vm.expectRevert(PriceOracle.UpdateTooFrequent.selector);
         oracle.setPrice(90e16, USDT_USD);
     }
 
@@ -195,13 +195,13 @@ contract PriceOracleTest is Test {
 
     function test_whitelist_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.addToWhitelist(newUser);
     }
 
     function test_removeWhitelist_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.removeFromWhitelist(newUser);
     }
 
@@ -225,7 +225,7 @@ contract PriceOracleTest is Test {
 
     function test_transferOwnership_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.transferOwnership(makeAddr("newOwner"));
     }
 
@@ -258,18 +258,18 @@ contract PriceOracleTest is Test {
     }
 
     function test_setOracleMode_invalidMode() public {
-        vm.expectRevert(KiloPriceOracle.InvalidOracleMode.selector);
+        vm.expectRevert(PriceOracle.InvalidOracleMode.selector);
         oracle.setOracleMode(4, 0);
     }
 
     function test_setOracleMode_invalidModeLoan() public {
-        vm.expectRevert(KiloPriceOracle.InvalidOracleMode.selector);
+        vm.expectRevert(PriceOracle.InvalidOracleMode.selector);
         oracle.setOracleMode(0, 5);
     }
 
     function test_setOracleMode_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setOracleMode(1, 1);
     }
 
@@ -294,7 +294,7 @@ contract PriceOracleTest is Test {
 
     function test_setStalenessThreshold_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setStalenessThreshold(7200);
     }
 
@@ -357,7 +357,7 @@ contract PriceOracleTest is Test {
 
     function test_setPythFeed_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setPythFeed(keccak256("a"), keccak256("b"));
     }
 
@@ -376,7 +376,7 @@ contract PriceOracleTest is Test {
 
     function test_setOraklFeed_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setOraklFeed("a", "b");
     }
 
@@ -397,7 +397,7 @@ contract PriceOracleTest is Test {
 
     function test_setBkcFeed_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setBkcFeed(makeAddr("a"), makeAddr("b"));
     }
 
@@ -409,7 +409,7 @@ contract PriceOracleTest is Test {
 
     function test_setPyth_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setPyth(makeAddr("pyth"));
     }
 
@@ -421,7 +421,7 @@ contract PriceOracleTest is Test {
 
     function test_setOraklRouter_onlyOwner() public {
         vm.prank(nonWhitelisted);
-        vm.expectRevert(KiloPriceOracle.NotOwner.selector);
+        vm.expectRevert(PriceOracle.NotOwner.selector);
         oracle.setOraklRouter(makeAddr("orakl"));
     }
 
@@ -432,14 +432,14 @@ contract PriceOracleTest is Test {
     function test_updatePythPrices_noPyth() public {
         bytes[] memory data = new bytes[](1);
         data[0] = bytes("test");
-        vm.expectRevert(KiloPriceOracle.OracleContractNotSet.selector);
+        vm.expectRevert(PriceOracle.OracleContractNotSet.selector);
         oracle.updatePythPrices{value: 0}(data);
     }
 
     function test_getUpdateFee_noPyth() public {
         bytes[] memory data = new bytes[](1);
         data[0] = bytes("test");
-        vm.expectRevert(KiloPriceOracle.OracleContractNotSet.selector);
+        vm.expectRevert(PriceOracle.OracleContractNotSet.selector);
         oracle.getUpdateFee(data);
     }
  
