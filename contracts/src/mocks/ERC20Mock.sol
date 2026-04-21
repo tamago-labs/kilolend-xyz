@@ -10,6 +10,8 @@ interface IERC20Mock {
     function allowance(address owner, address spender) external view returns (uint256);
     function approve(address spender, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function mint(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
 }
 
 contract ERC20Mock is IERC20Mock {
@@ -57,5 +59,18 @@ contract ERC20Mock is IERC20Mock {
         emit Transfer(from, to, amount);
 
         return true;
+    }
+
+    function mint(address to, uint256 amount) external {
+        totalSupply += amount;
+        balanceOf[to] += amount;
+        emit Transfer(address(0), to, amount);
+    }
+
+    function burn(address from, uint256 amount) external {
+        require(balanceOf[from] >= amount, "insufficient balance");
+        totalSupply -= amount;
+        balanceOf[from] -= amount;
+        emit Transfer(from, address(0), amount);
     }
 }

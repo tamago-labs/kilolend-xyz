@@ -26,15 +26,17 @@ import "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
+import {KYCLevel, IKYCRegistry} from "./KYCRegistry.sol";
 import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {MarketParamsLib} from "./libraries/MarketParamsLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
-/// @title Morpho
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
-/// @notice The Morpho contract.
+/// @title KiloLend (Fork of Morpho Blue with KYC)
+/// @author Morpho Labs (original), KiloLend (KYC modifications)
+/// @notice A fork of Morpho Blue that adds KYC (Know Your Customer) gating to lending markets.
+/// Markets can optionally require users to meet a KYC level before supplying, borrowing,
+/// supplying collateral, repaying, or withdrawing. Liquidations remain permissionless.
 contract Morpho is IMorphoStaticTyping {
 
     using MathLib for uint128;
@@ -69,6 +71,10 @@ contract Morpho is IMorphoStaticTyping {
     mapping(address => uint256) public nonce;
     /// @inheritdoc IMorphoStaticTyping
     mapping(Id => MarketParams) public idToMarketParams;
+    /// @inheritdoc IMorphoBase
+    address public kycRegistry;
+    /// @inheritdoc IMorphoBase
+    mapping(Id => KYCLevel) public marketRequiredKYC;
 
     /* CONSTRUCTOR */
 
@@ -145,6 +151,26 @@ contract Morpho is IMorphoStaticTyping {
         emit EventsLib.SetFeeRecipient(newFeeRecipient);
     }
 
+    /// @inheritdoc IMorphoBase
+    function setKYCRegistry(address newKYCRegistry) external onlyOwner {
+        require(newKYCRegistry != kycRegistry, ErrorsLib.ALREADY_SET);
+
+        kycRegistry = newKYCRegistry;
+
+        emit EventsLib.SetKYCRegistry(newKYCRegistry);
+    }
+
+    /// @inheritdoc IMorphoBase
+    function setMarketRequiredKYC(MarketParams memory marketParams, KYCLevel level) external onlyOwner {
+        Id id = marketParams.id();
+        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(level != marketRequiredKYC[id], ErrorsLib.ALREADY_SET);
+
+        marketRequiredKYC[id] = level;
+
+        emit EventsLib.SetMarketRequiredKYC(id, level);
+    }
+
     /* MARKET CREATION */
 
     /// @inheritdoc IMorphoBase
@@ -179,6 +205,7 @@ contract Morpho is IMorphoStaticTyping {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
+        _requireKYC(onBehalf, id);
 
         _accrueInterest(marketParams, id);
 
@@ -212,6 +239,7 @@ contract Morpho is IMorphoStaticTyping {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
+        _requireKYC(onBehalf, id);
 
         _accrueInterest(marketParams, id);
 
@@ -247,6 +275,7 @@ contract Morpho is IMorphoStaticTyping {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
+        _requireKYC(onBehalf, id);
 
         _accrueInterest(marketParams, id);
 
@@ -279,6 +308,7 @@ contract Morpho is IMorphoStaticTyping {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
+        _requireKYC(onBehalf, id);
 
         _accrueInterest(marketParams, id);
 
@@ -309,6 +339,7 @@ contract Morpho is IMorphoStaticTyping {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
+        _requireKYC(onBehalf, id);
 
         // Don't accrue interest because it's not required and it saves gas.
 
@@ -331,6 +362,7 @@ contract Morpho is IMorphoStaticTyping {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
+        _requireKYC(onBehalf, id);
 
         _accrueInterest(marketParams, id);
 
@@ -467,6 +499,15 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Returns whether the sender is authorized to manage `onBehalf`'s positions.
     function _isSenderAuthorized(address onBehalf) internal view returns (bool) {
         return msg.sender == onBehalf || isAuthorized[onBehalf][msg.sender];
+    }
+
+    /// @dev Reverts if the user does not meet the required KYC level for the given market.
+    /// @dev Skips the check if the required KYC level is None (no gas overhead for permissionless markets).
+    function _requireKYC(address user, Id id) internal view {
+        KYCLevel requiredLevel = marketRequiredKYC[id];
+        if (requiredLevel == KYCLevel.None) return;
+        require(kycRegistry != address(0), ErrorsLib.KYC_REGISTRY_NOT_SET);
+        require(IKYCRegistry(kycRegistry).isKYCVerified(user, requiredLevel), ErrorsLib.KYC_INSUFFICIENT);
     }
 
     /* INTEREST MANAGEMENT */

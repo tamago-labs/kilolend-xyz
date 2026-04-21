@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
+import {KYCLevel} from "../KYCRegistry.sol";
+
 type Id is bytes32;
 
 struct MarketParams {
@@ -289,6 +291,21 @@ interface IMorphoBase {
 
     /// @notice Accrues interest for the given market `marketParams`.
     function accrueInterest(MarketParams memory marketParams) external;
+
+    /// @notice The KYC registry contract.
+    function kycRegistry() external view returns (address);
+
+    /// @notice The required KYC level for a market.
+    function marketRequiredKYC(Id id) external view returns (KYCLevel);
+
+    /// @notice Sets the KYC registry contract.
+    /// @param newKYCRegistry The address of the new KYC registry.
+    function setKYCRegistry(address newKYCRegistry) external;
+
+    /// @notice Sets the required KYC level for a market.
+    /// @param marketParams The market to set the KYC level for.
+    /// @param level The required KYC level.
+    function setMarketRequiredKYC(MarketParams memory marketParams, KYCLevel level) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);

@@ -10,13 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
  * @notice Generic ERC-20 token with AI-agent role-based management
  * @dev Fixed supply token with Creator and AI-Agent roles
  * 
- * Features:
- * - Configurable name, symbol, and total supply
- * - Fixed supply (no minting after deployment)
- * - Creator role with full control
- * - AI-Agent role with burn-only capability
- * - Pausable functionality
- * - Role-based access control
  */
 contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
     

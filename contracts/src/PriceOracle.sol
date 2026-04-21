@@ -12,12 +12,6 @@ import {AggregatorV2V3Interface} from "./interfaces/AggregatorV2V3Interface.sol"
 ///         Each instance is bound to one collateral/loan pair at construction.
 ///         Supports 4 oracle sources: Fallback (admin-set), Pyth, Orakl, and BKC (Chainlink-style).
 ///         Prices are fetched in USD (scaled by 1e18) and converted to Morpho's expected format.
-///
-/// Oracle modes per side (collateral / loan):
-///   0 = Fallback (admin-set USD price)
-///   1 = Pyth     (Pyth Network real-time price feed)
-///   2 = Orakl    (Orakl Network price feed)
-///   3 = BKC      (Chainlink-style aggregator, e.g. BKC Chain)
 contract PriceOracle is IOracle {
     // ──────────────────────────── Immutables ────────────────────────────
     address public immutable LOAN_TOKEN;

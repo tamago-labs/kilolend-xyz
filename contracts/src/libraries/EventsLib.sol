@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Id, MarketParams} from "../interfaces/IMorpho.sol";
+import {KYCLevel} from "../KYCRegistry.sol";
 
 /// @title EventsLib
 /// @author Morpho Labs
@@ -147,4 +148,13 @@ library EventsLib {
     /// @param interest The amount of interest accrued.
     /// @param feeShares The amount of shares minted as fee.
     event AccrueInterest(Id indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
+
+    /// @notice Emitted when setting the KYC registry.
+    /// @param newKYCRegistry The new KYC registry address.
+    event SetKYCRegistry(address indexed newKYCRegistry);
+
+    /// @notice Emitted when setting the required KYC level for a market.
+    /// @param id The market id.
+    /// @param level The required KYC level.
+    event SetMarketRequiredKYC(Id indexed id, KYCLevel level);
 }

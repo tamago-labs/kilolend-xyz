@@ -77,4 +77,10 @@ library ErrorsLib {
 
     /// @notice Thrown when the maximum uint128 is exceeded.
     string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";
+
+    /// @notice Thrown when the user does not meet the required KYC level for a market.
+    string internal constant KYC_INSUFFICIENT = "insufficient KYC level";
+
+    /// @notice Thrown when the KYC registry has not been set.
+    string internal constant KYC_REGISTRY_NOT_SET = "KYC registry not set";
 }
