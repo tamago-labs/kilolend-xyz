@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ChevronDown, Menu, X, Wallet, LogOut } from "lucide-react";
+import { ChevronDown, Menu, X, Wallet, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -160,7 +160,7 @@ export const Header = () => {
                           className="flex items-center justify-center w-12 h-12 text-[#64748b] hover:text-[#ef4444] hover:bg-[#fef2f2] rounded-xl transition-colors"
                           title="Account"
                         >
-                          <Wallet size={20} />
+                          <User size={20} />
                         </button>
                       </div>
                     )}
@@ -291,7 +291,7 @@ export const Header = () => {
                                 }}
                                 className="flex items-center justify-center w-10 h-10 text-[#64748b] hover:text-[#ef4444] hover:bg-[#fef2f2] rounded-xl transition-colors"
                               >
-                                <Wallet size={20} />
+                                <User size={20} />
                               </button>
                             </div>
                           )}
