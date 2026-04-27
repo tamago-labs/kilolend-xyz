@@ -2,7 +2,7 @@
 
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits } from "viem";
-import { ERC20_MOCK_ABI } from "@/config/contracts";
+import { ERC20_ABI } from "@/config/abi";
 import { KUB_TESTNET_TOKENS } from "@/config/tokens";
 import { useTestnetTokenContext } from "@/contexts/TestnetTokenContext";
 import { useAccount } from "wagmi";
@@ -66,7 +66,7 @@ export function useMintToken(tokenKey: string) {
 
     writeContract({
       address: token.address,
-      abi: ERC20_MOCK_ABI,
+      abi: ERC20_ABI,
       functionName: "mint",
       args: [address, parsedAmount],
     });

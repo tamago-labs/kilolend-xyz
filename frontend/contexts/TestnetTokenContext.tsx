@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useAccount } from "wagmi";
 import { useReadContracts } from "wagmi";
-import { ERC20_MOCK_ABI } from "@/config/contracts";
+import { ERC20_ABI } from "@/config/abi";
 import { KUB_TESTNET_TOKENS } from "@/config/tokens";
 import { formatUnits } from "viem";
 
@@ -126,7 +126,7 @@ export function TestnetTokenProvider({ children }: { children: ReactNode }) {
   const tokenEntries = Object.entries(KUB_TESTNET_TOKENS);
   const contracts = tokenEntries.map(([, token]) => ({
     address: token.address,
-    abi: ERC20_MOCK_ABI,
+    abi: ERC20_ABI,
     functionName: "balanceOf" as const,
     args: [address ?? "0x0000000000000000000000000000000000000000"],
   }));
