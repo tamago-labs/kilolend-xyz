@@ -1,65 +1,58 @@
 "use client";
 
-import { useReadContract, useAccount } from "wagmi";
 import Image from "next/image";
 import { formatUnits } from "viem";
-import { MarketConfig, MORPHO_ADDRESS } from "@/config/markets";
-import { MORPHO_ABI } from "@/config/abi";
+import { MarketConfig } from "@/config/markets";
+import { useMarketInfo } from "@/hooks/useMarketInfo";
 
 interface MarketInfoProps {
   marketId: `0x${string}`;
   marketConfig: MarketConfig;
-  marketData: any;
-  marketParams: any;
+  marketData?: {
+    totalSupplyAssets: bigint;
+    totalSupplyShares: bigint;
+    totalBorrowAssets: bigint;
+    totalBorrowShares: bigint;
+    lastUpdate: bigint;
+    fee: bigint;
+  };
+  marketParams?: {
+    loanToken: `0x${string}`;
+    collateralToken: `0x${string}`;
+    oracle: `0x${string}`;
+    irm: `0x${string}`;
+    lltv: bigint;
+  };
   refetchMarketData?: () => void;
 }
 
-export const MarketInfo = ({ marketId, marketConfig, marketData, marketParams }: MarketInfoProps) => {
-  const { address } = useAccount();
-  const zeroAddress = "0x0000000000000000000000000000000000000000" as `0x${string}`;
-  
+export const MarketInfo = ({ marketId, marketConfig }: MarketInfoProps) => {
   const loanToken = marketConfig.loanToken;
-
-  // Read user position
-  const { data: position, refetch: refetchPosition } = useReadContract({
-    address: MORPHO_ADDRESS,
-    abi: MORPHO_ABI,
-    functionName: "position",
-    args: [marketId, address ?? zeroAddress],
-  });
-
-  // Calculate user supply value (convert shares to assets)
-  const supplyShares = position ? BigInt(position.supplyShares.toString()) : BigInt(0);
-  const totalSupplyAssets = marketData ? BigInt(marketData.totalSupplyAssets.toString()) : BigInt(0);
-  const totalSupplyShares = marketData ? BigInt(marketData.totalSupplyShares.toString()) : BigInt(0);
   
-  // Handle division by zero properly
-  let supplyAssets: bigint;
-  if (!marketData || totalSupplyShares === BigInt(0)) {
-    // Market doesn't exist OR first depositor (no shares yet) - fall back to shares directly
-    supplyAssets = supplyShares;
-  } else {
-    supplyAssets = (supplyShares * totalSupplyAssets) / totalSupplyShares;
-  }
-  
-  const userSupply = formatUnits(supplyAssets, loanToken.decimals);
+  // Use shared market info hook
+  const {
+    marketData,
+    marketParams,
+    userSupplyAssets,
+    userBorrowAssets,
+    position,
+    supplyAPY,
+    borrowAPY,
+    utilization,
+    lltvPercent,
+    loading,
+  } = useMarketInfo(marketId);
 
-  // Calculate utilization rate
+  // Calculate total supply and borrow
   const totalSupply = marketData
-    ? formatUnits(BigInt(marketData.totalSupplyAssets.toString()), loanToken.decimals)
-    : "—";
+    ? formatUnits(marketData.totalSupplyAssets, loanToken.decimals)
+    : "0";
   const totalBorrow = marketData
-    ? formatUnits(BigInt(marketData.totalBorrowAssets.toString()), loanToken.decimals)
-    : "—";
+    ? formatUnits(marketData.totalBorrowAssets, loanToken.decimals)
+    : "0";
   
-  const totalSupplyRaw = marketData ? BigInt(marketData.totalSupplyAssets.toString()) : BigInt(0);
-  const totalBorrowRaw = marketData ? BigInt(marketData.totalBorrowAssets.toString()) : BigInt(0);
-  const utilization = totalSupplyRaw > BigInt(0)
-    ? (Number(totalBorrowRaw) / Number(totalSupplyRaw)) * 100
-    : 0;
-
-  // Get IRM address for borrow rate
-  const irmAddress = marketParams?.irm as `0x${string}` | undefined;
+  // User's supply value
+  const userSupply = formatUnits(userSupplyAssets, loanToken.decimals);
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0]">
@@ -70,7 +63,13 @@ export const MarketInfo = ({ marketId, marketConfig, marketData, marketParams }:
         <div className="flex justify-between items-center">
           <span className="text-[#64748b]">Your Supply</span>
           <span className="font-semibold text-[#1e293b]">
-            {parseFloat(userSupply).toFixed(4)} {loanToken.symbol}
+            {loading ? "..." : `${parseFloat(userSupply).toFixed(4)} ${loanToken.symbol}`}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-[#64748b]">Supply APY</span>
+          <span className="font-semibold text-[#06C755]">
+            {loading ? "..." : `${supplyAPY.toFixed(2)}%`}
           </span>
         </div>
         <div className="flex justify-between items-center">
@@ -87,15 +86,19 @@ export const MarketInfo = ({ marketId, marketConfig, marketData, marketParams }:
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-[#64748b]">Total Supply</span>
-            <span className="font-medium text-[#1e293b]">{totalSupply} {loanToken.symbol}</span>
+            <span className="font-medium text-[#1e293b]">{loading ? "..." : `${parseFloat(totalSupply).toFixed(2)} ${loanToken.symbol}`}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-[#64748b]">Total Borrow</span>
-            <span className="font-medium text-[#1e293b]">{totalBorrow} {loanToken.symbol}</span>
+            <span className="font-medium text-[#1e293b]">{loading ? "..." : `${parseFloat(totalBorrow).toFixed(2)} ${loanToken.symbol}`}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-[#64748b]">Borrow APY</span>
+            <span className="font-medium text-[#ef4444]">{loading ? "..." : `${borrowAPY.toFixed(2)}%`}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-[#64748b]">Utilization</span>
-            <span className="font-medium text-[#1e293b]">{utilization.toFixed(2)}%</span>
+            <span className="font-medium text-[#1e293b]">{loading ? "..." : `${utilization.toFixed(2)}%`}</span>
           </div>
         </div>
       </div>
@@ -132,14 +135,12 @@ export const MarketInfo = ({ marketId, marketConfig, marketData, marketParams }:
               <span className="font-medium text-[#1e293b]">{marketConfig.collateralToken.symbol}</span>
             </div>
           </div>
-          {marketParams && (
-            <div className="flex justify-between items-center">
-              <span className="text-[#64748b]">LLTV</span>
-              <span className="font-medium text-[#1e293b]">
-                {Math.round(Number(formatUnits(BigInt(marketParams.lltv.toString()), 18)) * 100)}%
-              </span>
-            </div>
-          )}
+          <div className="flex justify-between items-center">
+            <span className="text-[#64748b]">LLTV</span>
+            <span className="font-medium text-[#1e293b]">
+              {loading ? "..." : `${lltvPercent}%`}
+            </span>
+          </div>
         </div>
       </div>
     </div>

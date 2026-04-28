@@ -60,20 +60,20 @@ export const MORPHO_ABI = [
     stateMutability: "view",
     type: "function",
   },
-  // Supply function 
+  // Supply function (supply loan token)
   {
     inputs: [
-      { name: "marketParams", type: "tuple", internalType: "struct MarketParams", components: [
-        { name: "loanToken", type: "address", internalType: "address" },
-        { name: "collateralToken", type: "address", internalType: "address" },
-        { name: "oracle", type: "address", internalType: "address" },
-        { name: "irm", type: "address", internalType: "address" },
-        { name: "lltv", type: "uint256", internalType: "uint256" },
+      { name: "marketParams", type: "tuple", components: [
+        { name: "loanToken", type: "address" },
+        { name: "collateralToken", type: "address" },
+        { name: "oracle", type: "address" },
+        { name: "irm", type: "address" },
+        { name: "lltv", type: "uint256" },
       ]},
-      { name: "assets", type: "uint256", internalType: "uint256" },
-      { name: "shares", type: "uint256", internalType: "uint256" },
-      { name: "onBehalf", type: "address", internalType: "address" },
-      { name: "data", type: "bytes", internalType: "bytes" },
+      { name: "assets", type: "uint256" },
+      { name: "shares", type: "uint256" },
+      { name: "onBehalf", type: "address" },
+      { name: "data", type: "bytes" },
     ],
     name: "supply",
     outputs: [{ name: "", type: "uint256" }, { name: "", type: "uint256" }],
@@ -180,30 +180,30 @@ export const MORPHO_ABI = [
   },
 ] as const;
 
-// IRM ABI for borrow rate
+// IRM ABI for borrow rate view 
 export const IRM_ABI = [
   {
+    name: "borrowRateView",
+    type: "function",
     inputs: [
-      { name: "marketParams", type: "tuple", components: [
-        { type: "address" },
-        { type: "address" },
-        { type: "address" },
-        { type: "address" },
-        { type: "uint256" },
+      { name: "", type: "tuple", internalType: "struct MarketParams", components: [
+        { name: "loanToken", type: "address", internalType: "address" },
+        { name: "collateralToken", type: "address", internalType: "address" },
+        { name: "oracle", type: "address", internalType: "address" },
+        { name: "irm", type: "address", internalType: "address" },
+        { name: "lltv", type: "uint256", internalType: "uint256" },
       ]},
-      { name: "market", type: "tuple", components: [
-        { type: "uint128" },
-        { type: "uint128" },
-        { type: "uint128" },
-        { type: "uint128" },
-        { type: "uint128" },
-        { type: "uint128" },
+      { name: "market", type: "tuple", internalType: "struct Market", components: [
+        { name: "totalSupplyAssets", type: "uint128", internalType: "uint128" },
+        { name: "totalSupplyShares", type: "uint128", internalType: "uint128" },
+        { name: "totalBorrowAssets", type: "uint128", internalType: "uint128" },
+        { name: "totalBorrowShares", type: "uint128", internalType: "uint128" },
+        { name: "lastUpdate", type: "uint128", internalType: "uint128" },
+        { name: "fee", type: "uint128", internalType: "uint128" },
       ]},
     ],
-    name: "borrowRateView",
-    outputs: [{ type: "uint256" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
-    type: "function",
   },
 ] as const;
 
@@ -250,6 +250,7 @@ export const ERC20_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  // Mint function for testnet tokens
   {
     inputs: [
       { name: "to", type: "address" },

@@ -6,20 +6,23 @@ import { parseUnits, formatUnits, maxUint256 } from "viem";
 import { Loader2 } from "lucide-react";
 import { MarketConfig, MORPHO_ADDRESS } from "@/config/markets";
 import { MORPHO_ABI, ERC20_ABI } from "@/config/abi";
+import { usePriceContext } from "@/contexts/PriceContext";
 
-type TabType = "supply" | "withdraw";
+type SupplyTabType = "supply" | "withdraw";
+type ModeType = "supply" | "withdraw";
 
-interface MarketActionsProps {
+interface SupplyActionsProps {
   marketId: `0x${string}`;
   marketConfig: MarketConfig;
   marketParams: any;
   marketData?: any;
   refetchMarketData?: () => void;
+  mode?: ModeType;
 }
 
-export const MarketActions = ({ marketId, marketConfig, marketParams, marketData, refetchMarketData }: MarketActionsProps) => {
+export const SupplyActions = ({ marketId, marketConfig, marketParams, marketData, refetchMarketData, mode }: SupplyActionsProps) => {
   const { address, isConnected } = useAccount();
-  const [activeTab, setActiveTab] = useState<TabType>("supply");
+  const [activeTab, setActiveTab] = useState<SupplyTabType>(mode === "withdraw" ? "withdraw" : "supply");
   const [amount, setAmount] = useState("");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -28,6 +31,10 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
 
   const loanToken = marketConfig.loanToken;
   const zeroAddress = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+
+  // Get real prices from price context
+  const { actions: priceActions } = usePriceContext();
+  const loanPrice = priceActions.getPrice(loanToken.priceSource)?.price ?? loanToken.fallbackPrice;
 
   // Read wallet balance
   const { data: walletBalance, refetch: refetchBalance } = useReadContract({
@@ -62,11 +69,11 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
   });
 
   // Write contract for supply/withdraw
-  const { data: supplyHash, writeContract: writeSupply, isPending: isSupplyPending, error: writeError } = useWriteContract();
+  const { data: actionHash, writeContract: writeAction, isPending: isActionPending, error: writeError } = useWriteContract();
 
   // Wait for transaction
   const { isLoading: isConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
-    hash: supplyHash,
+    hash: actionHash,
   });
 
   // Refetch allowance and balance when approval succeeds
@@ -80,10 +87,10 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
 
   // Handle tx success
   useEffect(() => {
-    if (isTxSuccess && supplyHash) {
+    if (isTxSuccess && actionHash) {
       setIsSuccess(true);
       setAmount("");
-      setTxHash(supplyHash);
+      setTxHash(actionHash);
       refetchBalance();
       refetchPosition();
       refetchMarketData?.();
@@ -92,7 +99,7 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
         setTxHash(null);
       }, 3000);
     }
-  }, [isTxSuccess, supplyHash, refetchBalance, refetchPosition, refetchMarketData]);
+  }, [isTxSuccess, actionHash, refetchBalance, refetchPosition, refetchMarketData]);
 
   // Surface write errors
   useEffect(() => {
@@ -112,13 +119,13 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
   // Handle division by zero properly
   let supplyAssets: bigint;
   if (!marketData || totalSupplyShares === BigInt(0)) {
-    // Market doesn't exist OR first depositor (no shares yet) - fall back to shares directly
     supplyAssets = supplyShares;
   } else {
     supplyAssets = (supplyShares * totalSupplyAssets) / totalSupplyShares;
   }
   
   const supplyBalance = formatUnits(supplyAssets, loanToken.decimals);
+  const hasSupply = supplyShares > BigInt(0);
 
   const walletBalanceFormatted = walletBalance
     ? formatUnits(walletBalance, loanToken.decimals)
@@ -171,16 +178,14 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
     const emptyData = "0x" as `0x${string}`;
 
     if (activeTab === "supply") {
-      // Supply assets (not shares), so assets > 0, shares = 0
-      writeSupply({
+      writeAction({
         address: MORPHO_ADDRESS,
         abi: MORPHO_ABI,
         functionName: "supply",
         args: [params, parsedAmount, zeroShares, address, emptyData],
       });
     } else {
-      // Withdraw assets (not shares), so assets > 0, shares = 0
-      writeSupply({
+      writeAction({
         address: MORPHO_ADDRESS,
         abi: MORPHO_ABI,
         functionName: "withdraw",
@@ -189,10 +194,10 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
     }
   };
 
-  const isLoading = isApproving || isApprovePending || isSupplyPending || isConfirming;
+  const isLoading = isApproving || isApprovePending || isActionPending || isConfirming;
   const isParamsLoading = marketParams === undefined;
 
-  const tabs: { key: TabType; label: string }[] = [
+  const tabs: { key: SupplyTabType; label: string }[] = [
     { key: "supply", label: "Supply" },
     { key: "withdraw", label: "Withdraw" },
   ];
@@ -223,8 +228,8 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
         </span>
         <span className="font-medium text-[#1e293b]">
           {activeTab === "supply"
-            ? `${walletBalanceFormatted} ${loanToken.symbol}`
-            : `${supplyBalance} ${loanToken.symbol}`}
+            ? `${parseFloat(walletBalanceFormatted).toFixed(4)} ${loanToken.symbol}`
+            : `${parseFloat(supplyBalance).toFixed(4)} ${loanToken.symbol}`}
         </span>
       </div>
 
@@ -248,7 +253,7 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
       {/* USD Value */}
       {amount && parseFloat(amount) > 0 && (
         <div className="mb-4 text-sm text-[#64748b]">
-          ≈ ${(parseFloat(amount) * loanToken.fallbackPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ≈ ${(parseFloat(amount) * loanPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       )}
 
@@ -284,7 +289,7 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
           {isApproving || isApprovePending ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              Approving...
+              {isApprovePending ? "Confirming..." : "Approving..."}
             </>
           ) : !isConnected ? (
             "Connect Wallet"
@@ -298,7 +303,7 @@ export const MarketActions = ({ marketId, marketConfig, marketParams, marketData
           disabled={!isConnected || isLoading || !amount || parseFloat(amount) <= 0 || !hasAllowance}
           className="w-full h-14 bg-[#06C755] hover:bg-[#05b54e] text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSupplyPending || isConfirming ? (
+          {isActionPending || isConfirming ? (
             <>
               <Loader2 size={18} className="animate-spin" />
               {isConfirming ? "Confirming..." : activeTab === "supply" ? "Supplying..." : "Withdrawing..."}

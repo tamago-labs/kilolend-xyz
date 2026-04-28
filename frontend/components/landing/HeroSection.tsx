@@ -1,8 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react"; 
+ 
 
 export const HeroSection = () => {
+  // Mock stats for now - real TVL and APY will come from market data
+  const avgSupplyAPY = 4.2;
+  const avgBorrowAPR = 6.8;
+
   return (
     <section className="bg-white border-b border-[#e2e8f0] px-8 pt-28 pb-24">
       <div className="max-w-[1200px] mx-auto flex flex-row items-center justify-between gap-12 max-[768px]:flex-col max-[768px]:gap-8">
@@ -45,17 +52,17 @@ export const HeroSection = () => {
             <div className="grid grid-cols-3 gap-4 w-full">
               <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm">
                 <span className="text-sm text-[#64748b]">Supply</span>
-                <span className="text-lg font-bold text-[#1e293b]">4.2%</span>
+                <span className="text-lg font-bold text-[#1e293b]">{avgSupplyAPY}%</span>
                 <span className="text-xs text-[#06C755]">APY</span>
               </div>
               <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm">
                 <span className="text-sm text-[#64748b]">Borrow</span>
-                <span className="text-lg font-bold text-[#1e293b]">6.8%</span>
+                <span className="text-lg font-bold text-[#1e293b]">{avgBorrowAPR}%</span>
                 <span className="text-xs text-[#ef4444]">APR</span>
               </div>
               <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm">
                 <span className="text-sm text-[#64748b]">Agents</span>
-                <span className="text-lg font-bold text-[#1e293b]">1,240</span>
+                <span className="text-lg font-bold text-[#1e293b]">1</span>
                 <span className="text-xs text-[#06C755]">Active</span>
               </div>
             </div>

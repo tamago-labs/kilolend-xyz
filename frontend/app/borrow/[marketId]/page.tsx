@@ -2,14 +2,14 @@
 
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { formatUnits } from "viem";
 import Image from "next/image";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getMarketById, MORPHO_ADDRESS } from "@/config/markets";
 import { MORPHO_ABI } from "@/config/abi";
 import { BorrowActions } from "@/components/markets/BorrowActions";
-import { MarketInfo } from "@/components/markets/MarketInfo";
+import { BorrowMarketInfo } from "@/components/markets/BorrowMarketInfo";
 
 export default function BorrowMarketDetailPage() {
   const params = useParams();
@@ -42,8 +42,7 @@ export default function BorrowMarketDetailPage() {
             href="/borrow"
             className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors mb-8"
           >
-            <ArrowLeft size={18} />
-            Back to Borrow Markets
+            ← Back to Borrow Markets
           </Link>
           <div className="text-center py-16">
             <h1 className="text-2xl font-bold text-[#1e293b] mb-2">Market Not Found</h1>
@@ -58,37 +57,27 @@ export default function BorrowMarketDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-[1200px] mx-auto px-8 py-8">
-        {/* Back Button */}
+      {/* Page Header */}
+      <PageHeader
+        badge="Borrow"
+        title={marketConfig.symbol}
+        subtitle={`Borrow ${marketConfig.loanToken.symbol} using ${collateralToken.symbol} as collateral`}
+      />
+
+      {/* Back Button */}
+      <div className="max-w-[1200px] mx-auto px-8 py-6">
         <Link
           href="/borrow"
-          className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors mb-8"
+          className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors"
         >
-          <ArrowLeft size={18} />
-          Back to Borrow Markets
+          ← Back to Borrow Markets
         </Link>
+      </div>
 
-        {/* Market Header */}
-        <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-[#f8fafc] flex items-center justify-center">
-              <Image
-                src={marketConfig.loanToken.iconUrl}
-                alt={marketConfig.symbol}
-                width={48}
-                height={48}
-                className="object-contain"
-                unoptimized
-              />
-            </div>
-            <div>
-              <h1 className="text-[32px] font-bold text-[#1e293b]">{marketConfig.symbol}</h1>
-              <p className="text-[#64748b]">{marketConfig.name}</p>
-            </div>
-          </div>
-
-          {/* Market Stats from Contract */}
-          <div className="grid grid-cols-4 gap-6">
+      {/* Market Stats */}
+      <div className="max-w-[1200px] mx-auto px-8 pb-8">
+        <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <p className="text-xs text-[#64748b] mb-1">Total Supply</p>
               <p className="text-xl font-bold text-[#1e293b]">
@@ -132,23 +121,34 @@ export default function BorrowMarketDetailPage() {
 
         {/* Actions and Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Deposit/Borrow Actions */}
-          <BorrowActions
+          {/* Market Info */}
+          <BorrowMarketInfo
             marketId={marketId}
             marketConfig={marketConfig}
-            marketParams={marketParams}
-            marketData={marketData}
-            refetchMarketData={refetchMarketData}
           />
 
-          {/* Market Info */}
-          <MarketInfo
-            marketId={marketId}
-            marketConfig={marketConfig}
-            marketData={marketData}
-            marketParams={marketParams}
-            refetchMarketData={refetchMarketData}
-          />
+          {/* Borrow Actions - separated into two cards */}
+          <div className="space-y-6">
+            {/* Deposit / Withdraw Collateral Card */}
+            <BorrowActions
+              marketId={marketId}
+              marketConfig={marketConfig}
+              marketParams={marketParams}
+              marketData={marketData}
+              refetchMarketData={refetchMarketData}
+              mode="collateral"
+            />
+            
+            {/* Borrow / Repay Card */}
+            <BorrowActions
+              marketId={marketId}
+              marketConfig={marketConfig}
+              marketParams={marketParams}
+              marketData={marketData}
+              refetchMarketData={refetchMarketData}
+              mode="borrow"
+            />
+          </div>
         </div>
       </div>
     </main>

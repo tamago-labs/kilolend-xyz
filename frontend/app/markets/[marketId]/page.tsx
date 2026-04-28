@@ -2,14 +2,14 @@
 
 import { useParams } from "next/navigation";
 import { useReadContract } from "wagmi";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { formatUnits } from "viem";
 import Image from "next/image";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getMarketById, MORPHO_ADDRESS } from "@/config/markets";
 import { MORPHO_ABI } from "@/config/abi";
-import { MarketActions } from "@/components/markets/MarketActions";
-import { MarketInfo } from "@/components/markets/MarketInfo";
+import { SupplyActions } from "@/components/markets/SupplyActions";
+import { SupplyMarketInfo } from "@/components/markets/SupplyMarketInfo";
 
 export default function MarketPage() {
   const params = useParams();
@@ -40,8 +40,7 @@ export default function MarketPage() {
             href="/markets"
             className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors mb-8"
           >
-            <ArrowLeft size={18} />
-            Back to Markets
+            ← Back to Markets
           </Link>
           <div className="text-center py-16">
             <h1 className="text-2xl font-bold text-[#1e293b] mb-2">Market Not Found</h1>
@@ -56,37 +55,27 @@ export default function MarketPage() {
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-[1200px] mx-auto px-8 py-8">
-        {/* Back Button */}
+      {/* Page Header */}
+      <PageHeader
+        badge="KUB Chain"
+        title={marketConfig.symbol}
+        subtitle={`Supply ${marketConfig.loanToken.symbol} and earn interest`}
+      />
+
+      {/* Back Button */}
+      <div className="max-w-[1200px] mx-auto px-8 py-6">
         <Link
           href="/markets"
-          className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors mb-8"
+          className="flex items-center gap-2 text-[#64748b] hover:text-[#06C755] transition-colors"
         >
-          <ArrowLeft size={18} />
-          Back to Markets
+          ← Back to Markets
         </Link>
+      </div>
 
-        {/* Market Header */}
-        <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-[#f8fafc] flex items-center justify-center">
-              <Image
-                src={loanToken.iconUrl}
-                alt={marketConfig.symbol}
-                width={48}
-                height={48}
-                className="object-contain"
-                unoptimized
-              />
-            </div>
-            <div>
-              <h1 className="text-[32px] font-bold text-[#1e293b]">{marketConfig.symbol}</h1>
-              <p className="text-[#64748b]">{marketConfig.name}</p>
-            </div>
-          </div>
-
-          {/* Market Stats from Contract */}
-          <div className="grid grid-cols-4 gap-6">
+      {/* Market Stats */}
+      <div className="max-w-[1200px] mx-auto px-8 pb-8">
+        <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <p className="text-xs text-[#64748b] mb-1">Total Supply</p>
               <p className="text-xl font-bold text-[#1e293b]">
@@ -130,21 +119,18 @@ export default function MarketPage() {
 
         {/* Actions and Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Supply/Withdraw Actions */}
-          <MarketActions
+          {/* Market Info */}
+          <SupplyMarketInfo
             marketId={marketId as `0x${string}`}
             marketConfig={marketConfig}
-            marketParams={marketParams}
-            marketData={marketData}
-            refetchMarketData={refetchMarketData}
           />
 
-          {/* Market Info */}
-          <MarketInfo
+          {/* Supply Actions - Single component with tabs */}
+          <SupplyActions
             marketId={marketId as `0x${string}`}
             marketConfig={marketConfig}
-            marketData={marketData}
             marketParams={marketParams}
+            marketData={marketData}
             refetchMarketData={refetchMarketData}
           />
         </div>

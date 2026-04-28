@@ -76,7 +76,7 @@ export const Header = () => {
               {showNavDropdown && (
                 <div className="absolute top-full left-0 bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-3 min-w-[200px] z-[100] mt-2">
                   <Link
-                    href="/leaderboard"
+                    href="/kilo-points"
                     className="block px-4 py-3 rounded-lg text-sm text-[#1e293b] hover:bg-[#f8fafc] transition-colors"
                     onClick={() => setShowNavDropdown(false)}
                   >
