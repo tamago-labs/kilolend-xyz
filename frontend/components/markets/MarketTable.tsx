@@ -151,22 +151,24 @@ const MarketRow = ({ marketId, mode }: MarketRowProps) => {
               {formatUSD(borrowedUSD)}
             </p>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-[#64748b] mb-1">Collateral</p>
-            <div className="flex items-center justify-center gap-1">
-              <Image
-                src={market.collateralToken.iconUrl}
-                alt={market.collateralToken.symbol}
-                width={16}
-                height={16}
-                className="object-contain"
-                unoptimized
-              />
-              <span className="text-base font-semibold text-[#1e293b]">
-                {market.collateralToken.symbol}
-              </span>
+          {mode === "borrow" && (
+            <div className="text-center">
+              <p className="text-xs text-[#64748b] mb-1">Collateral</p>
+              <div className="flex items-center justify-center gap-1">
+                <Image
+                  src={market.collateralToken.iconUrl}
+                  alt={market.collateralToken.symbol}
+                  width={16}
+                  height={16}
+                  className="object-contain"
+                  unoptimized
+                />
+                <span className="text-base font-semibold text-[#1e293b]">
+                  {market.collateralToken.symbol}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Action */}

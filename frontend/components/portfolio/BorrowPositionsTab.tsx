@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { KUB_TESTNET_MARKETS, getMarketById } from "@/config/markets";
 import { useMarketInfo } from "@/hooks/useMarketInfo";
+import { usePriceContext } from "@/contexts/PriceContext";
 import { formatUnits } from "viem";
 
 function formatUSD(amount: number): string {
@@ -16,11 +17,13 @@ function formatUSD(amount: number): string {
 function BorrowPositionRow({ marketId }: { marketId: `0x${string}` }) {
   const market = getMarketById(marketId);
   const { userBorrowAssets, borrowAPY, loading } = useMarketInfo(marketId);
+  const { actions: priceActions } = usePriceContext();
 
   if (!market) return null;
 
   const borrowNum = Number(formatUnits(userBorrowAssets, market.loanToken.decimals));
-  const usdValue = borrowNum * market.loanToken.fallbackPrice;
+  const price = priceActions.getPrice(market.loanToken.priceSource)?.price ?? market.loanToken.fallbackPrice;
+  const usdValue = borrowNum * price;
 
   return (
     <Link

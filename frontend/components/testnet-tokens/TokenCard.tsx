@@ -13,6 +13,12 @@ interface TokenCardProps {
   token: TestnetTokenConfig;
 }
 
+function formatUSD(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`;
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(2)}K`;
+  return `$${amount.toFixed(2)}`;
+}
+
 export const TokenCard = ({ tokenKey, token }: TokenCardProps) => {
   const { isConnected } = useAccount();
   const { mint, isWritePending, isConfirming, isSuccess, error, txHash } =
@@ -29,6 +35,11 @@ export const TokenCard = ({ tokenKey, token }: TokenCardProps) => {
   );
 
   const isMinting = isWritePending || isConfirming;
+
+  // Calculate USD value using real price
+  const balanceNum = parseFloat(formattedBalance.replace(/,/g, '')) || 0;
+  const price = priceData?.price ?? token.fallbackPrice;
+  const usdValue = balanceNum * price;
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -78,15 +89,9 @@ export const TokenCard = ({ tokenKey, token }: TokenCardProps) => {
           <p className="text-base font-semibold text-[#1e293b]">
             {isConnected ? formattedBalance : "—"}
           </p>
-          {isConnected && priceData && (
+          {isConnected && (
             <p className="text-xs text-[#64748b] mt-0.5">
-              ≈ $
-              {(
-                parseFloat(formattedBalance) * priceData.price
-              ).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              ≈ {formatUSD(usdValue)}
             </p>
           )}
         </div>

@@ -5,6 +5,7 @@ import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { KUB_TESTNET_TOKENS } from "@/config/tokens";
 import { ERC20_ABI } from "@/config/abi";
+import { usePriceContext } from "@/contexts/PriceContext";
 
 function formatUSD(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`;
@@ -59,13 +60,18 @@ function TokenBalanceWithData({
     args: [address],
   });
 
+  // Use price context for real prices
+  const { actions: priceActions } = usePriceContext();
+  const priceData = priceActions.getPrice(token.priceSource);
+  const price = priceData?.price ?? token.fallbackPrice;
+
   return (
     <TokenBalanceRow
       symbol={token.symbol}
       balance={balance ?? 0n}
       decimals={token.decimals}
       iconUrl={token.iconUrl}
-      price={token.fallbackPrice}
+      price={price}
     />
   );
 }

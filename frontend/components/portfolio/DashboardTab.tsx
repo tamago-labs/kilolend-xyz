@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, AlertTriangle, ChevronRight } from "lucide-react";
+import { TrendingUp, Wallet, ChevronRight } from "lucide-react";
 import { KUB_TESTNET_TOKENS } from "@/config/tokens";
+import { usePriceContext } from "@/contexts/PriceContext";
 
 function formatUSD(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`;
@@ -11,8 +12,16 @@ function formatUSD(amount: number): string {
 }
 
 export function DashboardTab() {
+  const { actions: priceActions } = usePriceContext();
   const tokens = Object.values(KUB_TESTNET_TOKENS);
-  const totalWalletValue = tokens.reduce((sum, token) => sum + token.fallbackPrice, 0);
+
+  // Calculate total wallet value using real prices
+  const totalWalletValue = tokens.reduce((sum, token) => {
+    const priceData = priceActions.getPrice(token.priceSource);
+    const price = priceData?.price ?? token.fallbackPrice;
+    // For dashboard, we show the price value (balance would need wallet connection)
+    return sum + price;
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -48,7 +57,7 @@ export function DashboardTab() {
         </Link>
         <Link href="/borrow" className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="w-12 h-12 rounded-full bg-[#fef2f2] flex items-center justify-center">
-            <AlertTriangle size={24} className="text-[#ef4444]" />
+            <Wallet size={24} className="text-[#ef4444]" />
           </div>
           <div className="flex-1">
             <p className="font-bold text-[#1e293b]">Borrow Assets</p>
