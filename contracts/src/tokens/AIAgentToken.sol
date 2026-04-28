@@ -10,13 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
  * @notice Generic ERC-20 token with AI-agent role-based management
  * @dev Fixed supply token with Creator and AI-Agent roles
  * 
- * Features:
- * - Configurable name, symbol, and total supply
- * - Fixed supply (no minting after deployment)
- * - Creator role with full control
- * - AI-Agent role with burn-only capability
- * - Pausable functionality
- * - Role-based access control
  */
 contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
     
@@ -105,7 +98,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @notice Grant AI agent burner role (Creator only)
      * @param aiAgent Address to grant AI agent role to
      */
-    function grantAIAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
+    function grantAiAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
         require(aiAgent != address(0), "AI agent cannot be zero address");
         _grantRole(AI_AGENT_BURNER_ROLE, aiAgent);
         emit AIAgentRoleGranted(aiAgent);
@@ -115,7 +108,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @notice Revoke AI agent burner role (Creator only)
      * @param aiAgent Address to revoke AI agent role from
      */
-    function revokeAIAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
+    function revokeAiAgentRole(address aiAgent) external onlyRole(CREATOR_ROLE) {
         require(aiAgent != address(0), "AI agent cannot be zero address");
         _revokeRole(AI_AGENT_BURNER_ROLE, aiAgent);
         emit AIAgentRoleRevoked(aiAgent);
@@ -126,7 +119,7 @@ contract AIAgentToken is ERC20, ERC20Pausable, AccessControl {
      * @param account Address to check
      * @return True if address has AI agent role
      */
-    function isAIAgent(address account) external view returns (bool) {
+    function isAiAgent(address account) external view returns (bool) {
         return hasRole(AI_AGENT_BURNER_ROLE, account);
     }
     
