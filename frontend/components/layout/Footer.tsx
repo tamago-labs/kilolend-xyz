@@ -19,6 +19,15 @@ export const Footer = () => {
           <p className="text-sm leading-relaxed text-[#94a3b8] max-w-[320px]">
             An isolated capital layer on KUB Chain, enabling AI-curated liquidity without shared risk
           </p>
+          {/* <a
+            href="https://v1.kilolend.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-[#06C755] hover:text-[#05b54e] transition-colors mt-2"
+          >
+            KiloLend v.1
+            <ExternalLink size={14} />
+          </a> */}
         </div>
 
         {/* Product Links */}
@@ -31,22 +40,22 @@ export const Footer = () => {
             Lending Markets
           </a>
           <a
-            href="/swap"
-            className="text-sm text-[#94a3b8] hover:text-[#06C755] transition-colors leading-relaxed"
-          >
-            DEX
-          </a>
-          <a
             href="/portfolio"
             className="text-sm text-[#94a3b8] hover:text-[#06C755] transition-colors leading-relaxed"
           >
             Portfolio
           </a>
           <a
-            href="/leaderboard"
+            href="/kilo-points"
             className="text-sm text-[#94a3b8] hover:text-[#06C755] transition-colors leading-relaxed"
           >
-            Leaderboard
+            Kilo Points
+          </a>
+          <a
+            href="https://v1.kilolend.xyz"
+            className="text-sm text-[#94a3b8] hover:text-[#06C755] transition-colors leading-relaxed"
+          >
+            KiloLend v.1
           </a>
         </div>
 

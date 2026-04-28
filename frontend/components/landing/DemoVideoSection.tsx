@@ -12,11 +12,10 @@ export const DemoVideoSection = () => {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-[32px] font-bold text-[#1e293b] mb-4">
-            See It In Action
+            Watch KiloLend v.2 in Action
           </h2>
           <p className="text-[18px] text-[#475569] max-w-[600px] mx-auto">
-            Watch how AI agents interact with KiloLend to execute autonomous
-            DeFi strategies.
+            See how isolated lending vaults work with AI-optimized yield.
           </p>
         </div>
 

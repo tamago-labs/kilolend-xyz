@@ -5,44 +5,44 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "What is KiloLend?",
+    question: "What is KiloLend v.2?",
     answer:
-      "KiloLend is an agent-native DeFi protocol that provides lending, borrowing, and trading infrastructure for AI agents. It allows autonomous agents to manage capital on-chain through programmable wallets and MCP server integration.",
+      "KiloLend v.2 is an AI-curated isolated lending protocol on KUB Chain. It provides a new risk model where each vault operates independently, eliminating contagion risk from shared liquidity pools.",
   },
   {
-    question: "What are OpenClaw Skills?",
+    question: "What is isolated lending?",
     answer:
-      "OpenClaw Skills are pre-built capabilities that let AI agents interact with KiloLend's DeFi services. They include supply, borrow, swap, portfolio management, and market analysis — all accessible through our MCP server.",
+      "Unlike traditional lending protocols with shared pools, KiloLend v.2 uses isolated markets for each vault. This means if one market has issues, it won't affect other markets or users — zero contagion.",
   },
   {
-    question: "How do AI agents connect to KiloLend?",
+    question: "What are AI-curated vaults?",
     answer:
-      "Agents connect through our MCP (Model Context Protocol) server, which provides a standardized interface for LLM-powered agents like Claude, GPT, and others. Simply configure your agent with our MCP server URL and start executing strategies.",
+      "AI-curated vaults use artificial intelligence to optimize liquidity allocation and yield strategies. This enables better capital efficiency and adaptive yield optimization based on market conditions.",
   },
   {
-    question: "Is KiloLend safe to use?",
+    question: "What are KILO Points?",
     answer:
-      "KiloLend is built on battle-tested smart contract architecture with community audits. All contracts are open source and available on GitHub. We follow security best practices from established DeFi protocols.",
+      "KILO Points are rewards earned by users who test KiloLend v.2 on the KUB Chain Testnet. Help us evaluate and improve the protocol before mainnet launch!",
   },
   {
-    question: "Which blockchains does KiloLend support?",
+    question: "Is this testnet or mainnet?",
     answer:
-      "KiloLend is currently deployed on the HSK Testnet. We plan to expand to additional chains including Kaia (KUB) and other EVM-compatible networks in the future.",
+      "KiloLend v.2 is currently live on KUB Chain Testnet with mock tokens. Mainnet is coming soon. This is your chance to explore the protocol and earn KILO Points.",
   },
+  // {
+  //   question: "Is KiloLend safe to use?",
+  //   answer:
+  //     "KiloLend v.2 is built with security-first architecture. The isolated risk model actually provides better protection against systemic failures. All smart contracts are audited and open source.",
+  // },
+  // {
+  //   question: "What tokens are supported?",
+  //   answer:
+  //     "On testnet, we support USDT, USDC, WETH, WBTC, and more. The isolated market model allows for permissionless market creation, so new tokens can be added easily.",
+  // },
   {
-    question: "What tokens can I lend and borrow?",
+    question: "How do I get started?",
     answer:
-      "Currently, KiloLend supports USDT, IRONCLAW (KLAW), and WHSK tokens on our testnet markets. New tokens and markets will be added as the protocol expands to additional networks.",
-  },
-  {
-    question: "Do I need to be an AI developer to use KiloLend?",
-    answer:
-      "Not at all! While KiloLend is designed with AI agents in mind, the protocol also supports regular user interactions through our web interface. You can supply, borrow, and swap tokens just like any other DeFi platform.",
-  },
-  {
-    question: "How are interest rates determined?",
-    answer:
-      "Interest rates are determined algorithmically based on supply and demand. As utilization of a market increases, both supply APY and borrow APR adjust accordingly through our interest rate model.",
+      "Connect your wallet to the KUB Chain Testnet, get test tokens from our faucet, then start supplying or borrowing. Earn KILO Points while you test!",
   },
 ];
 

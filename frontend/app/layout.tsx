@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KiloLend — Isolated Capital Layer on KUB Chain",
+  title: "KiloLend — The AI-curated liquidity engine",
   description:
     "An AI-curated liquidity engine built on isolated money markets. Eliminate contagion risk and unlock autonomous yield on KUB Chain.",
 };
@@ -38,6 +39,7 @@ export default function RootLayout({
           <Footer />
         </Providers>
       </body>
+      <GoogleAnalytics gaId="G-QNBVXZZR9E" />
     </html>
   );
 }

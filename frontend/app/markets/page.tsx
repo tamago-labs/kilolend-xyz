@@ -2,6 +2,7 @@
 
 import { MarketTable } from "@/components/markets/MarketTable";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { V2Banner } from "@/components/landing/V2Banner";
 
 export default function MarketsPage() {
   return (
@@ -12,6 +13,7 @@ export default function MarketsPage() {
         subtitle="Supply tokens to earn interest and KILO points"
       />
       <MarketTable mode="supply" />
+      <V2Banner />
     </main>
   );
 }

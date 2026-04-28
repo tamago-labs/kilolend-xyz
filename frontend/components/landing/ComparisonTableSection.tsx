@@ -40,15 +40,15 @@ function CrossMark() {
 
 export const ComparisonTableSection = () => {
   return (
-    <section className="px-8 py-20 bg-white border-b border-[#e2e8f0]">
+    <section id="comparison-table" className="px-8 py-20 bg-white border-b border-[#e2e8f0]">
       <div className="max-w-[1000px] mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-[32px] font-bold text-[#1e293b] mb-4">
-            Why KiloLend?
+            Why KiloLend V.2?
           </h2>
           <p className="text-[18px] text-[#475569] max-w-[700px] mx-auto">
-            The new KiloLend replaces shared pools with isolated markets, , designed to remove systemic risk and enable AI-driven capital allocation
+            The new KiloLend replaces shared pools with isolated markets, designed to remove systemic risk and enable AI-driven capital allocation
           </p>
         </div>
 

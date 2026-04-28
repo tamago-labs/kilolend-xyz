@@ -102,9 +102,6 @@ export function useMarketInfo(marketId: `0x${string}` | undefined): MarketInfo {
   // Get IRM address from market params
   const irmAddress = rawMarketParams?.irm;
   
-  console.log("irmAddress:", irmAddress)
-  console.log("rawMarketParams / rawMarketData:", rawMarketParams, rawMarketData)
-
   // Fetch borrow rate from IRM 
   const { data: rawBorrowRate } = useReadContract({
     address: irmAddress,
@@ -115,7 +112,6 @@ export function useMarketInfo(marketId: `0x${string}` | undefined): MarketInfo {
     query: { enabled: !!irmAddress && !!rawMarketParams && !!rawMarketData},
   });
 
-  console.log("rawBorrowRate:", rawBorrowRate)
 
   // Parse market data
   const marketData = useMemo((): MarketInfo["marketData"] => {

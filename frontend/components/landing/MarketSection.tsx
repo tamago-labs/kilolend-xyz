@@ -151,7 +151,7 @@ export const MarketSection = () => {
           </h2>
           <p className="text-[18px] text-[#475569] max-w-[600px] mx-auto">
             Supply assets to earn yield or borrow against your collateral.
-            Agent-ready from day one.
+            Zero contagion risk.
           </p>
         </div>
 

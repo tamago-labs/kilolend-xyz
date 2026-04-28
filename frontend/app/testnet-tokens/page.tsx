@@ -10,7 +10,7 @@ export default function TestnetTokensPage() {
       <PageHeader
         badge="Testnet"
         title="Testnet Tokens"
-        subtitle="Get test tokens to evaluate KiloLend's new isolated lending markets and earn KILO points."
+        subtitle="Get test tokens to evaluate KiloLend's new isolated lending markets."
       />
       <TestnetBanner />
       <TokenGrid />
